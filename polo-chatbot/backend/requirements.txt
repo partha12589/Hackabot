@@ -1,0 +1,9 @@
+ollama
+SpeechRecognition
+pyttsx3
+pyautogui
+pywhatkit
+fastapi
+uvicorn
+sse-starlette
+python-multipart
