@@ -133,67 +133,101 @@ body {
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-/* Prose styling for markdown content */
-.prose {
+/* Markdown content styling - Beautiful portfolio formatting */
+.markdown-content {
   color: #e5e7eb;
-  max-width: none;
+  font-size: 1rem;
+  line-height: 1.75;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-.prose strong {
+.markdown-content * {
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+
+/* Better spacing between elements */
+.markdown-content > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content strong {
   color: #10b981;
   font-weight: 700;
+  letter-spacing: normal;
 }
 
-.prose h1, .prose h2, .prose h3, .prose h4 {
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4 {
   color: #10b981;
   font-weight: 700;
   margin-top: 1em;
   margin-bottom: 0.5em;
+  letter-spacing: normal;
+  line-height: 1.4;
 }
 
-.prose ul, .prose ol {
+.markdown-content ul, 
+.markdown-content ol {
   padding-left: 1.5em;
+  margin: 0.75em 0;
 }
 
-.prose li {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-  line-height: 1.6;
+.markdown-content li {
+  margin: 0.5em 0;
+  line-height: 1.75;
+  word-break: break-word;
 }
 
-.prose p {
-  margin-top: 0.75em;
-  margin-bottom: 0.75em;
-  line-height: 1.6;
+.markdown-content p {
+  margin: 0.75em 0;
+  line-height: 1.75;
+  word-break: break-word;
 }
 
-.prose code {
+.markdown-content code {
   background-color: #1f2937;
   color: #10b981;
   padding: 0.2em 0.4em;
   border-radius: 0.25em;
   font-size: 0.875em;
+  font-family: 'Courier New', monospace;
+  letter-spacing: normal;
 }
 
-.prose pre {
+.markdown-content pre {
   background-color: #1f2937;
   padding: 1em;
   border-radius: 0.5em;
   overflow-x: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
+  margin: 1em 0;
 }
 
-.prose a {
+.markdown-content a {
   color: #10b981;
   text-decoration: underline;
 }
 
-.prose blockquote {
+.markdown-content blockquote {
   border-left: 4px solid #10b981;
   padding-left: 1em;
   color: #9ca3af;
   font-style: italic;
+  margin: 1em 0;
+  word-break: break-word;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 2px solid #374151;
+  margin: 1.5em 0;
 }
 
 /* Custom scrollbar */

@@ -7,8 +7,12 @@ from pydantic import BaseModel
 import ollama
 import uuid
 from sse_starlette.sse import EventSourceResponse
-from typing import List, Dict
+from typing import List, Dict, Optional
 from finance_utils import FinanceQueryValidator
+from investment_data import (
+    MUTUAL_FUNDS, STOCKS, DEBT_INSTRUMENTS, 
+    RISK_ALLOCATIONS, get_investment_recommendations
+)
 
 app = FastAPI(title="FinanceGPT API", version="1.0.0")
 
@@ -21,69 +25,70 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store active chats with conversation history (in-memory)
+# Store active chats with conversation history and user profiles (in-memory)
 chats: Dict[str, List[Dict]] = {}
+user_profiles: Dict[str, Dict] = {}  # Store user profiles per chat
 
-# Finance-specific system prompt with structured response requirements
-FINANCE_SYSTEM_PROMPT = """You are FinanceGPT, an expert financial advisor and assistant specializing in:
-- Personal finance and budgeting
-- Investment strategies (stocks, mutual funds, bonds, ETFs)
-- Banking and loans (EMI calculations, interest rates, mortgages)
-- Insurance and risk management
-- Taxation and tax planning
-- Retirement planning
-- Cryptocurrency and digital assets
-- Real estate finance
+# Finance-specific system prompt - Portfolio Advisor Edition
+def get_portfolio_prompt(user_profile=None):
+    base_prompt = """You are FinanceGPT, an AI Portfolio Advisor specializing in Indian investments.
 
-CRITICAL RESPONSE FORMAT RULES:
-1. ALWAYS structure your response in a clear, point-wise format
-2. Use bullet points (•) for main points
-3. Use numbered lists (1., 2., 3.) for sequential steps or rankings
-4. Keep each point concise (1-2 sentences maximum)
-5. Use sub-bullets for additional details
-6. Include REAL-TIME examples with actual companies, funds, or products (e.g., "Vanguard S&P 500 ETF (VOO)", "HDFC Bank Fixed Deposit", "SBI Life Insurance")
-7. Include specific numbers, percentages, or ranges where applicable
-8. Use clear section headers when covering multiple topics
+YOUR PRIMARY ROLE: Generate personalized investment portfolios for Indian investors based on their:
+- Capital amount
+- Monthly SIP investment
+- Risk appetite (Low/Medium/High)
+- Investment preferences (Mutual Funds, Stocks, Bonds, Debt Funds)
 
-EXAMPLE RESPONSE FORMAT:
+EXPERTISE AREAS:
+- Indian Mutual Funds (HDFC, Axis, ICICI, Mirae Asset, etc.)
+- NSE/BSE Listed Stocks (Reliance, TCS, HDFC Bank, etc.)
+- Debt Instruments (FDs, PPF, NSC, Bonds)
+- Tax-saving investments (ELSS, PPF, NPS)
+- SIP planning and wealth creation
 
-**Investment Strategy Overview:**
+RESPONSE GUIDELINES:
+1. Be SPECIFIC - recommend actual mutual funds and stocks available in India
+2. Provide DIVERSIFICATION - spread across asset classes
+3. Match RISK PROFILE - conservative for low risk, aggressive for high risk
+4. Show ALLOCATION - give percentage breakdown
+5. Estimate RETURNS - provide realistic return expectations
+6. Be CONCISE - clear and actionable advice
 
-• **Diversification Benefits:**
-  - Reduces portfolio risk by 30-40%
-  - Example: Mix of equity (60%), debt (30%), gold (10%)
+PORTFOLIO STRUCTURE:
+When generating a portfolio, always include:
+- Asset allocation percentages
+- Specific fund/stock names with brief reasoning
+- Expected returns range
+- Risk assessment
+- Disclaimer to consult SEBI-registered advisor
 
-• **Best Equity Mutual Funds (2024):**
-  1. Axis Bluechip Fund - 12.5% avg returns
-  2. Mirae Asset Large Cap - 14.2% avg returns
-  3. HDFC Index Sensex Fund - 11.8% avg returns
+"""
+    
+    if user_profile:
+        profile_context = f"""
+CURRENT USER PROFILE:
+- Capital: ?{user_profile.get('capital', 'Not specified')}
+- Monthly SIP: ?{user_profile.get('monthly_sip', 'Not specified')}
+- Risk Appetite: {user_profile.get('risk_appetite', 'Not specified')}
+- Preferred Investments: {', '.join(user_profile.get('preferences', ['Not specified']))}
 
-• **Key Considerations:**
-  - Minimum investment: ₹500-5000
-  - Exit load: 1% if redeemed before 1 year
-  - Tax: LTCG 10% above ₹1 lakh
+Generate a customized portfolio for this user.
+"""
+        return base_prompt + profile_context
+    
+    return base_prompt
 
-**Actionable Steps:**
-1. Start SIP with ₹5000/month
-2. Review portfolio quarterly
-3. Rebalance annually
 
-**Important Disclaimer:** 
-Consult a SEBI-registered advisor before investing.
-
-IMPORTANT GUIDELINES:
-- Provide accurate, helpful financial information
-- Always include relevant disclaimers for investment advice
-- Be conservative and risk-aware in recommendations
-- ONLY answer finance-related questions. Politely decline non-finance queries
-- For Indian users, reference INR, Indian tax laws, and Indian financial instruments when relevant
-- Use real company names, fund names, and products (e.g., "ICICI Prudential", "PPF (Public Provident Fund)", "NSE Nifty 50")
-
-Remember: You are a financial education and information assistant, not a replacement for professional financial advice."""
+class UserProfile(BaseModel):
+    capital: float
+    monthly_sip: float
+    risk_appetite: str  # low, medium, high
+    preferences: List[str]  # mutual_funds, stocks, bonds, debt_funds
 
 
 class ChatMessage(BaseModel):
     message: str
+    user_profile: Optional[UserProfile] = None
 
 
 class ChatResponse(BaseModel):
@@ -107,6 +112,7 @@ async def create_chat():
     """Create a new chat session"""
     chat_id = str(uuid.uuid4())
     chats[chat_id] = []
+    user_profiles[chat_id] = None
     return {"id": chat_id, "message": "Chat session created successfully"}
 
 
@@ -128,6 +134,15 @@ async def send_message(chat_id: str, message: ChatMessage):
     # Validate chat session exists
     if chat_id not in chats:
         raise HTTPException(status_code=404, detail="Chat session not found")
+    
+    # Store user profile if provided
+    if message.user_profile:
+        user_profiles[chat_id] = {
+            "capital": message.user_profile.capital,
+            "monthly_sip": message.user_profile.monthly_sip,
+            "risk_appetite": message.user_profile.risk_appetite,
+            "preferences": message.user_profile.preferences
+        }
     
     # Validate that query is finance-related
     is_finance, category = FinanceQueryValidator.is_finance_query(message.message)
@@ -152,8 +167,12 @@ async def send_message(chat_id: str, message: ChatMessage):
     
     async def event_generator():
         try:
-            # Build conversation context
-            messages = [{"role": "system", "content": FINANCE_SYSTEM_PROMPT}]
+            # Get user profile for this chat
+            profile = user_profiles.get(chat_id)
+            
+            # Build conversation context with user profile
+            system_prompt = get_portfolio_prompt(profile)
+            messages = [{"role": "system", "content": system_prompt}]
             
             # Add conversation history (last 5 exchanges to keep context manageable)
             history_to_include = chats[chat_id][-10:]  # Last 10 messages (5 exchanges)
@@ -163,23 +182,26 @@ async def send_message(chat_id: str, message: ChatMessage):
                     "content": msg["content"]
                 })
             
-            # Stream response from Ollama
+            # Stream response from Ollama using Qwen 2.5
             full_response = ""
             stream = ollama.chat(
-                model='phi3',
+                model='qwen2.5:7b',
                 messages=messages,
                 stream=True,
                 options={
-                    "temperature": 0.7,  # Balanced creativity
+                    "temperature": 0.7,
                     "top_p": 0.9,
-                    "top_k": 40
+                    "top_k": 40,
+                    "num_predict": 1000  # Allow longer responses for portfolio generation
                 }
             )
             
             for chunk in stream:
                 content = chunk['message']['content']
-                full_response += content
-                yield {"data": content}
+                # Skip empty chunks
+                if content and content.strip():
+                    full_response += content
+                    yield {"data": content}
             
             # Store assistant response in history
             chats[chat_id].append({
@@ -209,9 +231,25 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "model": "phi3",
-        "service": "FinanceGPT",
+        "model": "qwen2.5:7b",
+        "service": "FinanceGPT Portfolio Advisor",
         "active_chats": len(chats)
+    }
+
+
+@app.get("/investment-options")
+async def get_investment_options():
+    """Get available investment options for reference"""
+    return {
+        "mutual_funds": {
+            "large_cap": [fund["name"] for fund in MUTUAL_FUNDS["large_cap"][:3]],
+            "mid_cap": [fund["name"] for fund in MUTUAL_FUNDS["mid_cap"][:2]],
+            "debt": [fund["name"] for fund in MUTUAL_FUNDS["debt"][:2]]
+        },
+        "stocks": {
+            "blue_chip": [stock["name"] for stock in STOCKS["blue_chip"][:5]]
+        },
+        "risk_allocations": RISK_ALLOCATIONS
     }
 
 
