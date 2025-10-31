@@ -577,11 +577,11 @@ function Chatbot() {
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* CodeNCASH Logo - Large Square */}
+              {/* CodeNCASH Logo - Extra Large */}
               <img 
                 src="/logo.png" 
                 alt="CodeNCASH Logo" 
-                className="w-20 h-20 md:w-24 md:h-24 rounded-xl shadow-2xl object-cover border-2 border-green-400"
+                className="w-28 h-28 md:w-32 md:h-32 rounded-xl shadow-2xl object-contain border-2 border-green-400 bg-white p-1"
               />
               
               <div>
