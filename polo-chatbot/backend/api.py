@@ -35,51 +35,12 @@ FINANCE_SYSTEM_PROMPT = """You are FinanceGPT, an expert financial advisor and a
 - Cryptocurrency and digital assets
 - Real estate finance
 
-CRITICAL RESPONSE FORMAT RULES:
-1. BE CONCISE - Keep responses SHORT and TO THE POINT (3-5 key points maximum)
-2. Only provide detailed explanations if user explicitly asks for "more details" or "explain in detail"
-3. Use bullet points (•) for main points - each on a NEW LINE with blank line before
-4. Use numbered lists (1., 2., 3.) for sequential steps - each on a NEW LINE
-5. Each point should be 1-2 sentences MAXIMUM
-6. Include REAL-TIME examples with actual companies or products (e.g., "Vanguard S&P 500 ETF (VOO)", "HDFC Bank FD")
-7. Include specific numbers, percentages, or ranges where applicable
-8. Use clear section headers when covering multiple topics
-9. ALWAYS add blank lines between sections for better readability
-10. Default to CRISP bullet points - expand only if asked
-
-EXAMPLE CONCISE RESPONSE (Note the blank lines between points):
-
-**Retirement Planning:**
-
-• **Tax-Efficient Accounts:** Roth IRA (tax-free growth) or 401(k) (employer match)
-
-• **Diversified Portfolio:** 60% stocks, 30% bonds, 10% alternatives
-
-• **Start Early:** Compounding makes a huge difference over 20-30 years
-
-**Important:** Consult a certified financial advisor before making decisions.
-
----
-
-ONLY if user asks for MORE DETAILS, then provide:
-
-**Detailed Investment Strategy:**
-
-• **Diversification Benefits:**
-  - Reduces portfolio risk by 30-40%
-  - Example: Mix of equity (60%), debt (30%), gold (10%)
-
-• **Top Funds 2024:**
-  1. Axis Bluechip - 12.5% returns
-  2. Mirae Asset Large Cap - 14.2% returns
-  3. HDFC Index Sensex - 11.8% returns
-
-• **Key Points:**
-  - Min investment: ₹500-5000
-  - Exit load: 1% before 1 year
-  - Tax: LTCG 10% above ₹1 lakh
-
-REMEMBER: Default to CONCISE responses. Expand only when asked!
+CRITICAL RESPONSE RULES:
+1. Keep responses SHORT, CRISP and TO THE POINT (3-5 key points maximum)
+2. Be direct and clear - no unnecessary details
+3. Use simple language
+4. Include specific examples with real companies/products when helpful
+5. Always mention to consult a financial advisor for personalized advice
 
 IMPORTANT GUIDELINES:
 - Provide accurate, helpful financial information
@@ -176,15 +137,13 @@ async def send_message(chat_id: str, message: ChatMessage):
             # Stream response from Ollama
             full_response = ""
             stream = ollama.chat(
-                model='qwen2.5:7b',  # Using Qwen 2.5 for best structured finance responses
+                model='phi3',
                 messages=messages,
                 stream=True,
                 options={
                     "temperature": 0.7,
                     "top_p": 0.9,
-                    "top_k": 40,
-                    "repeat_penalty": 1.1,
-                    "num_predict": 500  # Limit response length for conciseness
+                    "top_k": 40
                 }
             )
             
@@ -223,7 +182,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "model": "qwen2.5:7b",
+        "model": "phi3",
         "service": "FinanceGPT",
         "active_chats": len(chats)
     }

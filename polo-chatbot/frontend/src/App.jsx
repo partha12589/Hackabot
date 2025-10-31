@@ -176,50 +176,6 @@ function ChatMessages({ messages, isLoading }) {
           }`}>
             {loading && !content ? (
               <TypingIndicator />
-            ) : role === 'assistant' ? (
-              <div className="markdown-content animate-fadeIn">
-                <ReactMarkdown
-                  components={{
-                    // Headings with custom styling
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-3 mt-4 break-words" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-4 break-words" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-3 break-words" {...props} />,
-                    
-                    // Paragraphs with spacing
-                    p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100 break-words" {...props} />,
-                    
-                    // Strong/bold text
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-300" {...props} />,
-                    
-                    // Unordered lists with custom bullets
-                    ul: ({node, ...props}) => <ul className="mb-3 ml-4 space-y-2 list-disc list-outside" {...props} />,
-                    li: ({node, ...props}) => (
-                      <li className="ml-2 pl-2 text-gray-100 leading-7 break-words" {...props} />
-                    ),
-                    
-                    // Ordered lists
-                    ol: ({node, ...props}) => <ol className="mb-3 ml-4 space-y-2 list-decimal list-outside" {...props} />,
-                    
-                    // Code blocks
-                    code: ({node, inline, ...props}) => 
-                      inline ? (
-                        <code className="bg-gray-700 px-2 py-1 rounded text-green-300 text-sm" {...props} />
-                      ) : (
-                        <code className="block bg-gray-800 p-3 rounded-lg my-2 overflow-x-auto text-sm" {...props} />
-                      ),
-                    
-                    // Blockquotes
-                    blockquote: ({node, ...props}) => (
-                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3 break-words" {...props} />
-                    ),
-                    
-                    // Horizontal rule
-                    hr: ({node, ...props}) => <hr className="my-4 border-gray-700" {...props} />,
-                  }}
-                >
-                  {normalizeText(content)}
-                </ReactMarkdown>
-              </div>
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}
@@ -481,7 +437,7 @@ function Chatbot() {
             </span>
           </h1>
           <p className="text-green-200 mt-3 text-xl font-semibold">
-            Your AI Financial Assistant powered by Qwen 2.5 ✨
+            Your AI Financial Assistant powered by Ollama Phi3 ✨
           </p>
         </div>
       </div>
