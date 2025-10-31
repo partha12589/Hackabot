@@ -28,66 +28,7 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Function to clean and normalize text - SUPER AGGRESSIVE MODE
-function normalizeText(text) {
-  if (!text) return text;
-  
-  let normalized = text;
-  
-  // Step 1: SUPER aggressive character spacing fix
-  // Fix patterns like "Mut ual" -> "Mutual", "Stock s" -> "Stocks"
-  for (let i = 0; i < 15; i++) {
-    const before = normalized;
-    normalized = normalized
-      // Fix single letter + space + letter within words
-      .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
-      // Fix single letter + space + letter (word boundary)
-      .replace(/\b([a-zA-Z])\s+([a-zA-Z])\b/g, '$1$2')
-      // Keep space before capital letters (new words)
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      // Fix numbers with spaces
-      .replace(/(\d)\s+(\d)/g, '$1$2')
-      // Fix common patterns
-      .replace(/([a-z])\s+ing\b/g, '$1ing')
-      .replace(/([a-z])\s+ed\b/g, '$1ed')
-      .replace(/([a-z])\s+es\b/g, '$1es')
-      .replace(/([a-z])\s+s\b/g, '$1s')
-      .replace(/([a-z])\s+ly\b/g, '$1ly');
-    
-    if (before === normalized) break;
-  }
-  
-  // Step 2: Fix markdown formatting
-  normalized = normalized
-    // Clean up asterisks (for bold)
-    .replace(/\*\s+\*/g, '**')
-    .replace(/\*\s+/g, '*')
-    .replace(/\s+\*/g, '*')
-    // Fix colons, periods, commas
-    .replace(/\s+([:.,%])/g, '$1')
-    .replace(/([:.,%])\s+/g, '$1 ')
-    // Fix parentheses
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
-    // Fix quotes
-    .replace(/['']\s+/g, "'")
-    .replace(/\s+['']/g, "'");
-  
-  // Step 3: Fix common abbreviations
-  normalized = normalized
-    .replace(/e\s*\.\s*g\s*\./gi, 'e.g.')
-    .replace(/i\s*\.\s*e\s*\./gi, 'i.e.')
-    .replace(/N\s+S\s+E/g, 'NSE')
-    .replace(/B\s+S\s+E/g, 'BSE');
-  
-  // Step 4: Clean whitespace
-  normalized = normalized
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\n\s*\n\s*\n+/g, '\n\n')
-    .trim();
-  
-  return normalized;
-}
+// Removed aggressive normalization - let Qwen's markdown render naturally
 
 // API functions
 const API_URL = 'http://localhost:8000';
@@ -194,8 +135,8 @@ function ChatMessages({ messages, isLoading }) {
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
-                    // Strong/bold - keep same color as text
-                    strong: ({node, ...props}) => <strong className="font-bold text-gray-100" {...props} />,
+                    // Strong/bold text
+                    strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -219,7 +160,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {normalizeText(content)}
+                  {content}
                 </ReactMarkdown>
               </div>
             ) : (
