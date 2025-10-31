@@ -481,7 +481,7 @@ function Chatbot() {
             </span>
           </h1>
           <p className="text-green-200 mt-3 text-xl font-semibold">
-            Your AI Financial Assistant powered by Ollama Llama 3.2 ✨
+            Your AI Financial Assistant powered by Qwen 2.5 ✨
           </p>
         </div>
       </div>

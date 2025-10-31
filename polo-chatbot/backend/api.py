@@ -176,7 +176,7 @@ async def send_message(chat_id: str, message: ChatMessage):
             # Stream response from Ollama
             full_response = ""
             stream = ollama.chat(
-                model='llama3.2',  # Using llama3.2 for better formatting and quality
+                model='qwen2.5:7b',  # Using Qwen 2.5 for best structured finance responses
                 messages=messages,
                 stream=True,
                 options={
@@ -223,7 +223,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "model": "llama3.2",
+        "model": "qwen2.5:7b",
         "service": "FinanceGPT",
         "active_chats": len(chats)
     }
