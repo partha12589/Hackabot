@@ -28,65 +28,48 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Function to clean and normalize text - AGGRESSIVE MODE
-function normalizeText(text) {
-  if (!text) return text;
-  
-  // Step 1: Fix character-by-character spacing issue (most aggressive fix)
-  // This handles cases like "R e t i r e m e n t" -> "Retirement"
-  let normalized = text;
-  
-  // Fix single characters with spaces between them (up to 10 iterations)
-  for (let i = 0; i < 10; i++) {
-    const before = normalized;
-    normalized = normalized
-      // Fix single letter/digit followed by space and another letter/digit
-      .replace(/\b([a-zA-Z0-9])\s+([a-zA-Z0-9])\b/g, '$1$2')
-      // Fix letter + space + letter (not word boundaries)
-      .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
-      .replace(/([a-z])\s+([A-Z])/g, '$1 $2') // Keep space before capitals (new words)
-      .replace(/([A-Z])\s+([A-Z])/g, '$1$2');
-    
-    if (before === normalized) break; // Stop if no changes
+// Function to tidy assistant markdown while keeping intentional structure intact
+function formatAssistantContent(text, finalize = false) {
+  if (!text) return '';
+
+  let formatted = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\u00a0/g, ' ');
+
+  // Remove stray spaces before punctuation like "," or "."
+  formatted = formatted.replace(/([A-Za-z0-9])\s+([,.;!?])/g, '$1$2');
+
+  // Ensure we keep a single space after punctuation when followed by a word character
+  formatted = formatted.replace(/([,.;!?])(?=[A-Za-z0-9])/g, '$1 ');
+
+  // Collapse duplicated spaces between word characters without touching indentation
+  formatted = formatted.replace(/([A-Za-z0-9])\s{2,}([A-Za-z0-9])/g, '$1 $2');
+
+  // Trim trailing whitespace on each line
+  formatted = formatted.replace(/[ \t]+\n/g, '\n');
+
+  // Normalise bullet and numbered list spacing
+  formatted = formatted.replace(/^([ \t]*[-*])(\s*)(\S)/gm, (_, bullet, space, char) => {
+    if (char === '-' || char === '*') {
+      return `${bullet}${space}${char}`;
+    }
+    return `${bullet} ${char}`;
+  });
+  formatted = formatted.replace(/^([ \t]*\d+\.)\s*(\S)/gm, (_, prefix, char) => `${prefix} ${char}`);
+
+  // Collapse excessive blank lines to a max of two
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+
+  if (finalize) {
+    const doubleStars = formatted.match(/\*\*/g);
+    if (doubleStars && doubleStars.length % 2 !== 0) {
+      formatted = formatted.replace(/\*\*(?!.*\*\*)/, '');
+    }
+
+    return formatted.trim();
   }
-  
-  // Step 2: Fix markdown symbols
-  normalized = normalized
-    // Fix asterisks with spaces
-    .replace(/\*\s+\*/g, '**')
-    .replace(/\s+\*\*/g, ' **')
-    .replace(/\*\*\s+/g, '** ')
-    // Fix colons with spaces
-    .replace(/\s+:/g, ':')
-    .replace(/:\s+\*/g, ':**')
-    // Fix parentheses
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
-    // Fix quotes
-    .replace(/\'\s+/g, "'")
-    .replace(/\s+\'/g, "'");
-  
-  // Step 3: Fix numbers
-  normalized = normalized
-    // Fix spaced numbers like "2 0 s" -> "20s"
-    .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix percentage signs
-    .replace(/(\d)\s+%/g, '$1%');
-  
-  // Step 4: Fix common abbreviations and punctuation
-  normalized = normalized
-    .replace(/\s+\./g, '.')
-    .replace(/\s+,/g, ',')
-    .replace(/e\s+\.\s+g\s+\./gi, 'e.g.')
-    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.');
-  
-  // Step 5: Clean up excessive whitespace
-  normalized = normalized
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 newlines
-    .trim();
-  
-  return normalized;
+
+  return formatted;
 }
 
 // API functions
@@ -186,16 +169,16 @@ function ChatMessages({ messages, isLoading }) {
                 <ReactMarkdown
                   components={{
                     // Headings
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-5" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-4" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="text-base font-bold text-green-300 mb-2 mt-3" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-semibold text-emerald-300 mb-4 mt-6 tracking-tight" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-emerald-300 mb-3 mt-5 tracking-tight" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-emerald-300 mb-2 mt-4 tracking-tight" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="text-base font-semibold text-emerald-300 mb-2 mt-3 tracking-tight" {...props} />,
                     
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
                     // Strong/bold
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-200" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-semibold text-emerald-200" {...props} />,
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -538,10 +521,12 @@ function Chatbot() {
       setMessages(prev => {
         const updated = [...prev];
         if (updated.length > 0 && updated[updated.length - 1].loading) {
+          const previous = updated[updated.length - 1];
+          const combinedContent = `${previous.content || ''}\n\n*[Generation stopped by user]*`;
           updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
+            ...previous,
             loading: false,
-            content: updated[updated.length - 1].content + '\n\n*[Generation stopped by user]*'
+            content: formatAssistantContent(combinedContent, true)
           };
         }
         return updated;
@@ -578,9 +563,11 @@ function Chatbot() {
       for await (const textChunk of parseSSEStream(stream)) {
         setMessages(prev => {
           const updated = [...prev];
+          const previous = updated[updated.length - 1];
+          const combinedContent = `${previous.content || ''}${textChunk}`;
           updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: updated[updated.length - 1].content + textChunk
+            ...previous,
+            content: formatAssistantContent(combinedContent)
           };
           return updated;
         });
@@ -588,9 +575,11 @@ function Chatbot() {
       
       setMessages(prev => {
         const updated = [...prev];
+        const previous = updated[updated.length - 1];
         updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          loading: false
+          ...previous,
+          loading: false,
+          content: formatAssistantContent(previous.content, true)
         };
         return updated;
       });
@@ -616,7 +605,7 @@ function Chatbot() {
         const updated = [...prev];
         updated[updated.length - 1] = {
           ...updated[updated.length - 1],
-          content: errorMessage,
+          content: formatAssistantContent(errorMessage, true),
           loading: false,
           error: true
         };

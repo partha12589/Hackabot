@@ -157,17 +157,19 @@ body {
 }
 
 .markdown-content strong {
-  color: #10b981;
-  font-weight: 700;
+  color: #bbf7d0;
+  font-weight: 600;
   letter-spacing: normal;
+  border-bottom: 1px solid rgba(187, 247, 208, 0.35);
+  padding-bottom: 0.05em;
 }
 
 .markdown-content h1, 
 .markdown-content h2, 
 .markdown-content h3, 
 .markdown-content h4 {
-  color: #10b981;
-  font-weight: 700;
+  color: #6ee7b7;
+  font-weight: 600;
   margin-top: 1em;
   margin-bottom: 0.5em;
   letter-spacing: normal;
