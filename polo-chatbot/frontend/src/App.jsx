@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import { marked } from 'marked';
 import jsPDF from 'jspdf';
 import './App.css';
 
@@ -215,50 +213,10 @@ function ChatMessages({ messages, isLoading }) {
               <TypingIndicator />
             ) : role === 'assistant' ? (
               <>
-                <div className="markdown-content animate-fadeIn">
-                  <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    // Headings
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-5" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-4" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="text-base font-bold text-green-300 mb-2 mt-3" {...props} />,
-                    
-                    // Paragraphs
-                    p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
-                    
-                    // Strong/bold text - VERY PROMINENT
-                    strong: ({node, ...props}) => (
-                      <strong className="font-bold text-green-300 bg-green-900 bg-opacity-30 px-1 rounded" {...props} />
-                    ),
-                    
-                    // Lists
-                    ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
-                    li: ({node, ...props}) => <li className="text-gray-100 leading-7" {...props} />,
-                    ol: ({node, ...props}) => <ol className="mb-4 ml-6 space-y-2 list-decimal" {...props} />,
-                    
-                    // Code
-                    code: ({node, inline, ...props}) => 
-                      inline ? (
-                        <code className="bg-gray-700 text-green-300 px-2 py-1 rounded text-sm font-mono" {...props} />
-                      ) : (
-                        <code className="block bg-gray-800 text-gray-100 p-4 rounded-lg my-3 overflow-x-auto text-sm font-mono" {...props} />
-                      ),
-                    
-                    // Blockquotes
-                    blockquote: ({node, ...props}) => (
-                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3" {...props} />
-                    ),
-                    
-                    // Horizontal rules
-                    hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
-                  }}
-                >
-                  {formatResponse(content)}
-                </ReactMarkdown>
-              </div>
+                <div 
+                  className="markdown-content animate-fadeIn"
+                  dangerouslySetInnerHTML={{ __html: marked.parse(formatResponse(content)) }}
+                />
               
               {/* PDF Download Button */}
               {content && content.length > 200 && (
