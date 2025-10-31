@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import jsPDF from 'jspdf';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -147,6 +148,45 @@ function TypingIndicator() {
   );
 }
 
+// PDF Generation Function
+function generatePortfolioPDF(content) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const maxWidth = pageWidth - 2 * margin;
+  
+  // Add title
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CodeNCASH - Investment Portfolio', margin, 20);
+  
+  // Add date
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
+  
+  // Clean markdown from content
+  const cleanContent = content
+    .replace(/\*\*/g, '')
+    .replace(/###/g, '')
+    .replace(/##/g, '')
+    .replace(/#/g, '');
+  
+  // Add content
+  doc.setFontSize(11);
+  const lines = doc.splitTextToSize(cleanContent, maxWidth);
+  doc.text(lines, margin, 40);
+  
+  // Add disclaimer at bottom
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('This is an AI-generated portfolio. Consult a SEBI-registered advisor.', margin, pageHeight - 10);
+  
+  // Save PDF
+  doc.save('CodeNCASH-Portfolio.pdf');
+}
+
 // ChatMessages Component
 function ChatMessages({ messages, isLoading }) {
   const messagesEndRef = useRef(null);
@@ -171,7 +211,7 @@ function ChatMessages({ messages, isLoading }) {
             </div>
           )}
           
-          <div className={`max-w-[75%] rounded-2xl p-5 transform transition-all duration-500 hover:scale-105 ${
+          <div className={`max-w-[80%] rounded-2xl p-6 transform transition-all duration-500 hover:scale-[1.02] ${
             role === 'user' 
               ? 'finance-message-user shadow-2xl animate-shimmer' 
               : 'finance-message-assistant hover:border-green-500 shadow-2xl'
@@ -179,8 +219,9 @@ function ChatMessages({ messages, isLoading }) {
             {loading && !content ? (
               <TypingIndicator />
             ) : role === 'assistant' ? (
-              <div className="markdown-content animate-fadeIn">
-                <ReactMarkdown
+              <>
+                <div className="markdown-content animate-fadeIn">
+                  <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                   components={{
@@ -193,8 +234,10 @@ function ChatMessages({ messages, isLoading }) {
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
-                    // Strong/bold text
-                    strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                    // Strong/bold text - VERY PROMINENT
+                    strong: ({node, ...props}) => (
+                      <strong className="font-bold text-green-300 bg-green-900 bg-opacity-30 px-1 rounded" {...props} />
+                    ),
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -221,6 +264,18 @@ function ChatMessages({ messages, isLoading }) {
                   {cleanText(content)}
                 </ReactMarkdown>
               </div>
+              
+              {/* PDF Download Button */}
+              {content && content.length > 200 && (
+                <button
+                  onClick={() => generatePortfolioPDF(content)}
+                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm font-semibold"
+                >
+                  <span>📄</span>
+                  <span>Download Portfolio as PDF</span>
+                </button>
+              )}
+            </>
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}
