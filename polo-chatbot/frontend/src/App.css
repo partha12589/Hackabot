@@ -136,8 +136,8 @@ body {
 /* Markdown content styling - Beautiful portfolio formatting */
 .markdown-content {
   color: #e5e7eb;
-  font-size: 1rem;
-  line-height: 1.75;
+  font-size: 0.95rem;
+  line-height: 1.6;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -157,38 +157,39 @@ body {
 }
 
 .markdown-content strong {
-  color: #10b981;
-  font-weight: 700;
+  color: #34d399;
+  font-weight: 600;
   letter-spacing: normal;
+  font-size: 0.95rem;
 }
 
 .markdown-content h1, 
 .markdown-content h2, 
 .markdown-content h3, 
 .markdown-content h4 {
-  color: #10b981;
+  color: #34d399;
   font-weight: 700;
-  margin-top: 1em;
-  margin-bottom: 0.5em;
+  margin-top: 0.75em;
+  margin-bottom: 0.4em;
   letter-spacing: normal;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .markdown-content ul, 
 .markdown-content ol {
-  padding-left: 1.5em;
-  margin: 0.75em 0;
+  padding-left: 1.25em;
+  margin: 0.5em 0;
 }
 
 .markdown-content li {
-  margin: 0.5em 0;
-  line-height: 1.75;
+  margin: 0.25em 0;
+  line-height: 1.6;
   word-break: break-word;
 }
 
 .markdown-content p {
-  margin: 0.75em 0;
-  line-height: 1.75;
+  margin: 0.5em 0;
+  line-height: 1.6;
   word-break: break-word;
 }
 
