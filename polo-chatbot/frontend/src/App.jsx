@@ -28,45 +28,44 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Function to clean and normalize text - AGGRESSIVE MODE
+// Function to clean and normalize text - Enhanced version
 function normalizeText(text) {
   if (!text) return text;
   
-  // Step 1: Fix character-by-character spacing issue (most aggressive fix)
-  // This handles cases like "R e t i r e m e n t" -> "Retirement"
   let normalized = text;
   
-  // Fix single characters with spaces between them (up to 10 iterations)
+  // Step 1: Fix character-by-character spacing issue first
+  // This handles cases like "R e t i r e m e n t" -> "Retirement"
   for (let i = 0; i < 10; i++) {
     const before = normalized;
     normalized = normalized
-      // Fix single letter/digit followed by space and another letter/digit
+      // Fix single letter/digit followed by space and another letter/digit (within same word)
       .replace(/\b([a-zA-Z0-9])\s+([a-zA-Z0-9])\b/g, '$1$2')
-      // Fix letter + space + letter (not word boundaries)
+      // Fix letter + space + lowercase letter (same word)
       .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
-      .replace(/([a-z])\s+([A-Z])/g, '$1 $2') // Keep space before capitals (new words)
+      // Keep space before capitals (new words)
+      .replace(/([a-z])\s+([A-Z])/g, '$1 $2')
+      // Fix uppercase + space + uppercase (unless it's an acronym)
       .replace(/([A-Z])\s+([A-Z])/g, '$1$2');
     
     if (before === normalized) break; // Stop if no changes
   }
   
-  // Step 2: Fix markdown symbols
+  // Step 2: Fix markdown asterisks - handle broken markdown patterns carefully
   normalized = normalized
-    // Fix asterisks with spaces
+    // Fix spaced asterisks: * * -> ** (most common broken markdown)
     .replace(/\*\s+\*/g, '**')
-    .replace(/\s+\*\*/g, ' **')
-    .replace(/\*\*\s+/g, '** ')
-    // Fix colons with spaces
-    .replace(/\s+:/g, ':')
-    .replace(/:\s+\*/g, ':**')
-    // Fix parentheses
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
-    // Fix quotes
-    .replace(/\'\s+/g, "'")
-    .replace(/\s+\'/g, "'");
+    // Fix triple asterisks (bold + italic)
+    .replace(/\*\*\s+\*/g, '***')
+    .replace(/\*\s+\*\*/g, '***')
+    // Remove orphaned single asterisks that aren't part of markdown (space * word -> word)
+    .replace(/\s+\*\s+([^\s*])/g, ' $1')
+    // Fix markdown that's stuck to words: "word**text**" -> "word **text**"
+    // But check if space already exists to avoid double spaces
+    .replace(/([^\s])\*\*/g, '$1 **')
+    .replace(/\*\*([^\s*])/g, '**$1');
   
-  // Step 3: Fix numbers
+  // Step 3: Fix numbers and percentages
   normalized = normalized
     // Fix spaced numbers like "2 0 s" -> "20s"
     .replace(/(\d)\s+(\d)/g, '$1$2')
@@ -78,12 +77,23 @@ function normalizeText(text) {
     .replace(/\s+\./g, '.')
     .replace(/\s+,/g, ',')
     .replace(/e\s+\.\s+g\s+\./gi, 'e.g.')
-    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.');
+    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.')
+    // Fix colons
+    .replace(/\s+:/g, ':')
+    // Fix parentheses
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    // Fix quotes
+    .replace(/\'\s+/g, "'")
+    .replace(/\s+\'/g, "'");
   
-  // Step 5: Clean up excessive whitespace
+  // Step 5: Final cleanup - ensure proper spacing
   normalized = normalized
+    // Clean up excessive whitespace (but preserve single spaces)
     .replace(/\s{2,}/g, ' ')
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 newlines
+    // Fix multiple newlines
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    // Trim
     .trim();
   
   return normalized;
@@ -194,8 +204,8 @@ function ChatMessages({ messages, isLoading }) {
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
-                    // Strong/bold
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-200" {...props} />,
+                    // Strong/bold - reduced size and less prominent
+                    strong: ({node, ...props}) => <strong className="font-semibold text-green-300 text-base" {...props} />,
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -219,7 +229,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {content}
+                  {normalizeText(content)}
                 </ReactMarkdown>
               </div>
             ) : (
@@ -578,9 +588,11 @@ function Chatbot() {
       for await (const textChunk of parseSSEStream(stream)) {
         setMessages(prev => {
           const updated = [...prev];
+          const currentContent = updated[updated.length - 1].content + textChunk;
+          // Normalize text as it streams in
           updated[updated.length - 1] = {
             ...updated[updated.length - 1],
-            content: updated[updated.length - 1].content + textChunk
+            content: normalizeText(currentContent)
           };
           return updated;
         });
@@ -590,7 +602,9 @@ function Chatbot() {
         const updated = [...prev];
         updated[updated.length - 1] = {
           ...updated[updated.length - 1],
-          loading: false
+          loading: false,
+          // Final normalization pass when message is complete
+          content: normalizeText(updated[updated.length - 1].content)
         };
         return updated;
       });
