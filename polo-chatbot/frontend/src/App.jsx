@@ -31,27 +31,55 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Minimal text cleanup - only fix specific issues
-function cleanText(text) {
+// Smart text formatter - handles all spacing issues intelligently
+function formatResponse(text) {
   if (!text) return text;
   
-  // ONLY fix specific known issues, don't touch normal text!
-  return text
-    // Fix spaced abbreviations only
+  // Step 1: Add spaces where clearly missing (no space between letter and capital)
+  let formatted = text
+    // Add space before capital letter in middle of "word" (Basedonyour -> Based on your)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    // Add space after common sentence enders
+    .replace(/([.!?])([A-Z])/g, '$1 $2')
+    // Add space after commas if missing
+    .replace(/,([^\s])/g, ', $1')
+    // Add space after colons
+    .replace(/:([^\s:])/g, ': $1');
+  
+  // Step 2: Fix specific abbreviations with spaces
+  formatted = formatted
     .replace(/\bS\s+E\s+B\s+I\b/g, 'SEBI')
     .replace(/\bE\s+M\s+I\b/g, 'EMI')
     .replace(/\bN\s+S\s+E\b/g, 'NSE')
     .replace(/\bB\s+S\s+E\b/g, 'BSE')
     .replace(/\bS\s+I\s+P\b/g, 'SIP')
-    // Fix numbers with spaces in them (like "1 0,0 0 0")
+    .replace(/\bH\s+D\s+F\s+C\b/g, 'HDFC')
+    .replace(/\bI\s+C\s+I\s+C\s+I\b/g, 'ICICI')
+    .replace(/\bT\s+C\s+S\b/g, 'TCS')
+    .replace(/\bS\s+B\s+I\b/g, 'SBI');
+  
+  // Step 3: Fix numbers with spaces
+  formatted = formatted
     .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix rupee symbol
-    .replace(/\?\s*(\d)/g, '₹$1')
-    // Fix percentage with space
+    .replace(/(\d)\s+,\s*(\d)/g, '$1,$2')
     .replace(/(\d+)\s+%/g, '$1%')
-    // Fix extra spaces only
-    .replace(/\s{3,}/g, ' ')
+    .replace(/₹\s*(\d)/g, '₹$1');
+  
+  // Step 4: Fix markdown formatting
+  formatted = formatted
+    // Ensure space before ** at start of bold
+    .replace(/(\w)\*\*/g, '$1 **')
+    // Ensure space after ** at end of bold  
+    .replace(/\*\*(\w)/g, '** $1')
+    // Fix double asterisks with spaces between
+    .replace(/\*\s+\*/g, '**');
+  
+  // Step 5: Clean up excessive spaces
+  formatted = formatted
+    .replace(/\s{2,}/g, ' ')
     .trim();
+  
+  return formatted;
 }
 
 // API functions
@@ -228,7 +256,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {cleanText(content)}
+                  {formatResponse(content)}
                 </ReactMarkdown>
               </div>
               
