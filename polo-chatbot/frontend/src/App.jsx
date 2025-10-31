@@ -570,33 +570,33 @@ function Chatbot() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
-      {/* Header */}
-      <div className="finance-header relative text-white p-6 shadow-2xl border-b-4 border-green-700 backdrop-blur-sm animate-fadeIn">
+      {/* Header - Compact */}
+      <div className="finance-header relative text-white py-3 px-4 shadow-xl border-b-2 border-green-700 backdrop-blur-sm">
         <div className="absolute inset-0 animate-gradient opacity-20"></div>
         
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* CodeNCASH Logo - Extra Large */}
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* CodeNCASH Logo - Compact */}
               <img 
                 src="/logo.png" 
                 alt="CodeNCASH Logo" 
-                className="w-28 h-28 md:w-32 md:h-32 rounded-xl shadow-2xl object-contain border-2 border-green-400 bg-white p-1"
+                className="w-14 h-14 md:w-16 md:h-16 rounded-lg shadow-lg object-contain border border-green-400 bg-white p-0.5"
               />
               
               <div>
-                <h1 className="text-3xl md:text-4xl font-black flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-black flex items-center gap-2">
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white">
                     CodeNCASH
                   </span>
                 </h1>
-                <p className="text-green-200 text-sm md:text-base font-medium mt-1">
-                  AI Portfolio Advisor for Indian Investors
+                <p className="text-green-200 text-xs md:text-sm font-medium">
+                  AI Portfolio Advisor
                 </p>
               </div>
             </div>
             
-            {/* Back Button */}
+            {/* Back Button - Compact */}
             {!showProfileForm && messages.length > 0 && (
               <button
                 onClick={() => {
@@ -605,10 +605,10 @@ function Chatbot() {
                   setUserProfile(null);
                   setChatId(null);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-300 border-2 border-gray-600 hover:border-green-500"
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-all duration-300 border border-gray-600 hover:border-green-500"
               >
-                <span className="text-xl">←</span>
-                <span className="hidden md:inline">New Portfolio</span>
+                <span className="text-lg">←</span>
+                <span className="hidden md:inline">New</span>
               </button>
             )}
           </div>
