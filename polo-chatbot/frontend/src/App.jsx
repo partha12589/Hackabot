@@ -30,30 +30,60 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Clean up text spacing issues from streaming
+// SUPER AGGRESSIVE text cleanup for Qwen streaming issues
 function cleanText(text) {
   if (!text) return text;
   
-  // Fix common spacing patterns
-  return text
-    // Fix common words with spaces
-    .replace(/\b([A-Z][a-z]*)\s+([a-z]+)\b/g, (match, p1, p2) => {
-      // If second part looks like a word ending, join them
-      if (p2.length <= 3 || ['ing', 'tion', 'ate', 'ment', 'ity'].some(end => p2.endsWith(end))) {
-        return p1 + p2;
-      }
-      return match;
-    })
-    // Fix spaced abbreviations
-    .replace(/\bE\s+M\s+I\b/g, 'EMI')
-    .replace(/\bN\s+S\s+E\b/g, 'NSE')
-    .replace(/\bB\s+S\s+E\b/g, 'BSE')
+  let cleaned = text;
+  
+  // Step 1: Fix ALL spacing patterns (iterate multiple times)
+  for (let i = 0; i < 5; i++) {
+    const before = cleaned;
+    cleaned = cleaned
+      // Fix letter + space + letter patterns
+      .replace(/([a-z])\s+([a-z])/g, '$1$2')
+      .replace(/([A-Z])\s+([a-z]+)\b/g, '$1$2')
+      // Keep spaces between separate words (capital indicates new word)
+      .replace(/([a-z])([A-Z])/g, '$1 $2');
+    if (before === cleaned) break;
+  }
+  
+  // Step 2: Fix specific problematic patterns
+  cleaned = cleaned
+    // Fix common financial terms
+    .replace(/\bS\s*E\s*B\s*I\b/gi, 'SEBI')
+    .replace(/\bE\s*M\s*I\b/g, 'EMI')
+    .replace(/\bN\s*S\s*E\b/g, 'NSE')
+    .replace(/\bB\s*S\s*E\b/g, 'BSE')
+    .replace(/\bS\s*I\s*P\b/g, 'SIP')
+    .replace(/\bT\s*C\s*S\b/g, 'TCS')
+    .replace(/\bH\s*D\s*F\s*C\b/g, 'HDFC')
+    .replace(/\bI\s*C\s*I\s*C\s*I\b/g, 'ICICI')
+    .replace(/\bS\s*B\s*I\b/g, 'SBI')
+    .replace(/\bH\s*C\s*L\b/g, 'HCL')
+    // Fix word fragments
+    .replace(/\bBased\s*on\b/g, 'Based on')
+    .replace(/\bPersonal\s*ized\b/g, 'Personalized')
+    .replace(/\bAllocation\s*:/g, 'Allocation:')
     // Fix numbers with spaces
-    .replace(/(\d)\s+,\s+(\d)/g, '$1,$2')
+    .replace(/(\d)\s+,\s*(\d)/g, '$1,$2')
     .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix multiple spaces
+    .replace(/\?\s+(\d)/g, '₹$1')
+    // Fix percentage signs
+    .replace(/(\d+)\s*-\s*(\d+)\s*%/g, '$1-$2%')
+    .replace(/(\d+)\s+%/g, '$1%')
+    // Fix punctuation spacing
+    .replace(/\s+([.,;:!?])/g, '$1')
+    .replace(/([.,;:])\s*\*\*/g, '$1 **')
+    // Fix asterisks (markdown bold markers)
+    .replace(/\*\*\s+/g, '**')
+    .replace(/\s+\*\*/g, ' **')
+    .replace(/\*\s+\*/g, '**')
+    // Clean up extra spaces
     .replace(/\s{2,}/g, ' ')
     .trim();
+  
+  return cleaned;
 }
 
 // API functions

@@ -53,6 +53,8 @@ RESPONSE GUIDELINES:
 4. Show ALLOCATION - give percentage breakdown
 5. Estimate RETURNS - provide realistic return expectations
 6. Be CONCISE - clear and actionable advice
+7. FORMATTING - Use proper markdown with NO extra spaces between letters
+8. Write words correctly without spaces (HDFC not H D F C, TCS not T C S)
 
 PORTFOLIO STRUCTURE:
 When generating a portfolio, always include:
