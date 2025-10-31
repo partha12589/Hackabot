@@ -341,8 +341,8 @@ function UserProfileForm({ onSubmit, onSkip }) {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8 bg-gray-950">
-      <div className="max-w-2xl w-full bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-3xl shadow-2xl border-2 border-green-600 animate-fadeIn">
+    <div className="flex-1 overflow-y-auto p-8 bg-gray-950">
+      <div className="max-w-2xl w-full mx-auto bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-3xl shadow-2xl border-2 border-green-600 animate-fadeIn my-4">
         <h2 className="text-3xl font-bold text-green-300 mb-2 text-center">
           💼 Let's Build Your Portfolio
         </h2>
@@ -593,14 +593,14 @@ function Chatbot() {
         <div className="absolute inset-0 animate-gradient opacity-20"></div>
         
         <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-5xl font-black flex items-center gap-4 hover:scale-105 transition-transform duration-500">
-            <span className="text-6xl animate-float drop-shadow-lg">💼</span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white">
-              FinanceGPT Portfolio Advisor
+          <h1 className="text-4xl md:text-5xl font-black flex items-center gap-3 hover:scale-105 transition-transform duration-500">
+            <span className="text-5xl md:text-6xl animate-float drop-shadow-lg">💼</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white break-words">
+              FinanceGPT
             </span>
           </h1>
-          <p className="text-green-200 mt-3 text-xl font-semibold">
-            AI-Powered Portfolio Generation for Indian Investors ✨
+          <p className="text-green-200 mt-2 text-lg md:text-xl font-semibold">
+            AI Portfolio Advisor for Indian Investors ✨
           </p>
         </div>
       </div>
