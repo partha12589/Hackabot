@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -28,7 +30,31 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Removed aggressive normalization - let Qwen's markdown render naturally
+// Clean up text spacing issues from streaming
+function cleanText(text) {
+  if (!text) return text;
+  
+  // Fix common spacing patterns
+  return text
+    // Fix common words with spaces
+    .replace(/\b([A-Z][a-z]*)\s+([a-z]+)\b/g, (match, p1, p2) => {
+      // If second part looks like a word ending, join them
+      if (p2.length <= 3 || ['ing', 'tion', 'ate', 'ment', 'ity'].some(end => p2.endsWith(end))) {
+        return p1 + p2;
+      }
+      return match;
+    })
+    // Fix spaced abbreviations
+    .replace(/\bE\s+M\s+I\b/g, 'EMI')
+    .replace(/\bN\s+S\s+E\b/g, 'NSE')
+    .replace(/\bB\s+S\s+E\b/g, 'BSE')
+    // Fix numbers with spaces
+    .replace(/(\d)\s+,\s+(\d)/g, '$1,$2')
+    .replace(/(\d)\s+(\d)/g, '$1$2')
+    // Fix multiple spaces
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 // API functions
 const API_URL = 'http://localhost:8000';
@@ -125,6 +151,8 @@ function ChatMessages({ messages, isLoading }) {
             ) : role === 'assistant' ? (
               <div className="markdown-content animate-fadeIn">
                 <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     // Headings
                     h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
@@ -160,7 +188,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {content}
+                  {cleanText(content)}
                 </ReactMarkdown>
               </div>
             ) : (
