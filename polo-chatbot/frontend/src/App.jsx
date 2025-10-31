@@ -571,19 +571,45 @@ function Chatbot() {
   return (
     <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
       {/* Header */}
-      <div className="finance-header relative text-white p-8 shadow-2xl border-b-4 border-green-700 backdrop-blur-sm animate-fadeIn overflow-hidden">
+      <div className="finance-header relative text-white p-6 shadow-2xl border-b-4 border-green-700 backdrop-blur-sm animate-fadeIn">
         <div className="absolute inset-0 animate-gradient opacity-20"></div>
         
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-black flex items-center gap-3 hover:scale-105 transition-transform duration-500">
-            <span className="text-5xl md:text-6xl animate-float drop-shadow-lg">💼</span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white break-words">
-              FinanceGPT
-            </span>
-          </h1>
-          <p className="text-green-200 mt-2 text-lg md:text-xl font-semibold">
-            AI Portfolio Advisor for Indian Investors ✨
-          </p>
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Logo placeholder - replace with actual image */}
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg">
+                💰
+              </div>
+              
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black flex items-center gap-2">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white">
+                    CodeNCASH
+                  </span>
+                </h1>
+                <p className="text-green-200 text-sm md:text-base font-medium mt-1">
+                  AI Portfolio Advisor for Indian Investors
+                </p>
+              </div>
+            </div>
+            
+            {/* Back Button */}
+            {!showProfileForm && messages.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowProfileForm(true);
+                  setMessages([]);
+                  setUserProfile(null);
+                  setChatId(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-300 border-2 border-gray-600 hover:border-green-500"
+              >
+                <span className="text-xl">←</span>
+                <span className="hidden md:inline">New Portfolio</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -598,14 +624,14 @@ function Chatbot() {
       {/* Welcome Message */}
       {!showProfileForm && messages.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-8 bg-gray-950 overflow-y-auto">
-          <div className="text-center max-w-3xl">
+          <div className="text-center max-w-4xl">
             <div className="text-8xl mb-6 animate-float hover:scale-125 transition-transform duration-500 cursor-pointer">
               💰
             </div>
             <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400 mb-6 animate-slideInFromBottom">
-              Welcome to FinanceGPT
+              Welcome to CodeNCASH
             </h2>
-            <p className="text-gray-300 text-xl mb-8 leading-relaxed font-medium">
+            <p className="text-gray-300 text-xl mb-8 leading-relaxed font-medium px-4">
               I specialize in financial advice and can help you with investments, loans, taxes, budgeting, and more!
             </p>
 
