@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import jsPDF from 'jspdf';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -30,30 +31,55 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Clean up text spacing issues from streaming
-function cleanText(text) {
+// Smart text formatter - handles all spacing issues intelligently
+function formatResponse(text) {
   if (!text) return text;
   
-  // Fix common spacing patterns
-  return text
-    // Fix common words with spaces
-    .replace(/\b([A-Z][a-z]*)\s+([a-z]+)\b/g, (match, p1, p2) => {
-      // If second part looks like a word ending, join them
-      if (p2.length <= 3 || ['ing', 'tion', 'ate', 'ment', 'ity'].some(end => p2.endsWith(end))) {
-        return p1 + p2;
-      }
-      return match;
-    })
-    // Fix spaced abbreviations
+  // Step 1: Add spaces where clearly missing (no space between letter and capital)
+  let formatted = text
+    // Add space before capital letter in middle of "word" (Basedonyour -> Based on your)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    // Add space after common sentence enders
+    .replace(/([.!?])([A-Z])/g, '$1 $2')
+    // Add space after commas if missing
+    .replace(/,([^\s])/g, ', $1')
+    // Add space after colons
+    .replace(/:([^\s:])/g, ': $1');
+  
+  // Step 2: Fix specific abbreviations with spaces
+  formatted = formatted
+    .replace(/\bS\s+E\s+B\s+I\b/g, 'SEBI')
     .replace(/\bE\s+M\s+I\b/g, 'EMI')
     .replace(/\bN\s+S\s+E\b/g, 'NSE')
     .replace(/\bB\s+S\s+E\b/g, 'BSE')
-    // Fix numbers with spaces
-    .replace(/(\d)\s+,\s+(\d)/g, '$1,$2')
+    .replace(/\bS\s+I\s+P\b/g, 'SIP')
+    .replace(/\bH\s+D\s+F\s+C\b/g, 'HDFC')
+    .replace(/\bI\s+C\s+I\s+C\s+I\b/g, 'ICICI')
+    .replace(/\bT\s+C\s+S\b/g, 'TCS')
+    .replace(/\bS\s+B\s+I\b/g, 'SBI');
+  
+  // Step 3: Fix numbers with spaces
+  formatted = formatted
     .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix multiple spaces
+    .replace(/(\d)\s+,\s*(\d)/g, '$1,$2')
+    .replace(/(\d+)\s+%/g, '$1%')
+    .replace(/₹\s*(\d)/g, '₹$1');
+  
+  // Step 4: Fix markdown formatting
+  formatted = formatted
+    // Ensure space before ** at start of bold
+    .replace(/(\w)\*\*/g, '$1 **')
+    // Ensure space after ** at end of bold  
+    .replace(/\*\*(\w)/g, '** $1')
+    // Fix double asterisks with spaces between
+    .replace(/\*\s+\*/g, '**');
+  
+  // Step 5: Clean up excessive spaces
+  formatted = formatted
     .replace(/\s{2,}/g, ' ')
     .trim();
+  
+  return formatted;
 }
 
 // API functions
@@ -117,6 +143,45 @@ function TypingIndicator() {
   );
 }
 
+// PDF Generation Function
+function generatePortfolioPDF(content) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const maxWidth = pageWidth - 2 * margin;
+  
+  // Add title
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CodeNCASH - Investment Portfolio', margin, 20);
+  
+  // Add date
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
+  
+  // Clean markdown from content
+  const cleanContent = content
+    .replace(/\*\*/g, '')
+    .replace(/###/g, '')
+    .replace(/##/g, '')
+    .replace(/#/g, '');
+  
+  // Add content
+  doc.setFontSize(11);
+  const lines = doc.splitTextToSize(cleanContent, maxWidth);
+  doc.text(lines, margin, 40);
+  
+  // Add disclaimer at bottom
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('This is an AI-generated portfolio. Consult a SEBI-registered advisor.', margin, pageHeight - 10);
+  
+  // Save PDF
+  doc.save('CodeNCASH-Portfolio.pdf');
+}
+
 // ChatMessages Component
 function ChatMessages({ messages, isLoading }) {
   const messagesEndRef = useRef(null);
@@ -141,7 +206,7 @@ function ChatMessages({ messages, isLoading }) {
             </div>
           )}
           
-          <div className={`max-w-[75%] rounded-2xl p-5 transform transition-all duration-500 hover:scale-105 ${
+          <div className={`max-w-[80%] rounded-2xl p-6 transform transition-all duration-500 hover:scale-[1.02] ${
             role === 'user' 
               ? 'finance-message-user shadow-2xl animate-shimmer' 
               : 'finance-message-assistant hover:border-green-500 shadow-2xl'
@@ -149,8 +214,9 @@ function ChatMessages({ messages, isLoading }) {
             {loading && !content ? (
               <TypingIndicator />
             ) : role === 'assistant' ? (
-              <div className="markdown-content animate-fadeIn">
-                <ReactMarkdown
+              <>
+                <div className="markdown-content animate-fadeIn">
+                  <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                   components={{
@@ -163,8 +229,10 @@ function ChatMessages({ messages, isLoading }) {
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
-                    // Strong/bold text
-                    strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                    // Strong/bold text - VERY PROMINENT
+                    strong: ({node, ...props}) => (
+                      <strong className="font-bold text-green-300 bg-green-900 bg-opacity-30 px-1 rounded" {...props} />
+                    ),
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -188,9 +256,21 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {cleanText(content)}
+                  {formatResponse(content)}
                 </ReactMarkdown>
               </div>
+              
+              {/* PDF Download Button */}
+              {content && content.length > 200 && (
+                <button
+                  onClick={() => generatePortfolioPDF(content)}
+                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm font-semibold"
+                >
+                  <span>📄</span>
+                  <span>Download Portfolio as PDF</span>
+                </button>
+              )}
+            </>
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}
