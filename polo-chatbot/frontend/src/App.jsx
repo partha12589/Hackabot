@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { marked } from 'marked';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -121,6 +122,11 @@ function ChatMessages({ messages, isLoading }) {
           }`}>
             {loading && !content ? (
               <TypingIndicator />
+            ) : role === 'assistant' ? (
+              <div 
+                className="markdown-content leading-relaxed animate-fadeIn text-base"
+                dangerouslySetInnerHTML={{ __html: marked.parse(content) }}
+              />
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}
