@@ -39,11 +39,12 @@ async function createChat() {
   return data;
 }
 
-async function sendChatMessage(chatId, message) {
+async function sendChatMessage(chatId, message, signal) {
   const res = await fetch(`${API_URL}/chats/${chatId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ message }),
+    signal
   });
   if (!res.ok) {
     const errorData = await res.json();
@@ -111,28 +112,28 @@ function ChatMessages({ messages, isLoading }) {
             {loading && !content ? (
               <TypingIndicator />
             ) : role === 'assistant' ? (
-              <div className="prose prose-invert prose-sm max-w-none animate-fadeIn">
+              <div className="markdown-content animate-fadeIn">
                 <ReactMarkdown
                   components={{
                     // Headings with custom styling
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-3 mt-4" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-4" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-3" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-3 mt-4 break-words" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-4 break-words" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-3 break-words" {...props} />,
                     
                     // Paragraphs with spacing
-                    p: ({node, ...props}) => <p className="mb-3 leading-relaxed text-gray-100" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100 break-words" {...props} />,
                     
                     // Strong/bold text
                     strong: ({node, ...props}) => <strong className="font-bold text-green-300" {...props} />,
                     
                     // Unordered lists with custom bullets
-                    ul: ({node, ...props}) => <ul className="mb-3 ml-2 space-y-2" {...props} />,
+                    ul: ({node, ...props}) => <ul className="mb-3 ml-4 space-y-2 list-disc list-outside" {...props} />,
                     li: ({node, ...props}) => (
-                      <li className="ml-4 pl-2 text-gray-100 leading-relaxed" {...props} />
+                      <li className="ml-2 pl-2 text-gray-100 leading-7 break-words" {...props} />
                     ),
                     
                     // Ordered lists
-                    ol: ({node, ...props}) => <ol className="mb-3 ml-2 space-y-2 list-decimal list-inside" {...props} />,
+                    ol: ({node, ...props}) => <ol className="mb-3 ml-4 space-y-2 list-decimal list-outside" {...props} />,
                     
                     // Code blocks
                     code: ({node, inline, ...props}) => 
@@ -144,8 +145,11 @@ function ChatMessages({ messages, isLoading }) {
                     
                     // Blockquotes
                     blockquote: ({node, ...props}) => (
-                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3" {...props} />
+                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3 break-words" {...props} />
                     ),
+                    
+                    // Horizontal rule
+                    hr: ({node, ...props}) => <hr className="my-4 border-gray-700" {...props} />,
                   }}
                 >
                   {content}
@@ -177,7 +181,7 @@ function ChatMessages({ messages, isLoading }) {
 }
 
 // ChatInput Component
-function ChatInput({ newMessage, isLoading, setNewMessage, submitNewMessage }) {
+function ChatInput({ newMessage, isLoading, setNewMessage, submitNewMessage, onStop }) {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef(null);
 
@@ -218,21 +222,28 @@ function ChatInput({ newMessage, isLoading, setNewMessage, submitNewMessage }) {
             disabled={isLoading}
           />
         </div>
-        <button
-          onClick={submitNewMessage}
-          disabled={isLoading || !newMessage.trim()}
-          className="finance-button relative px-8 py-4 text-white text-base font-bold rounded-2xl disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed transition-all duration-500 shadow-2xl hover:scale-110 active:scale-95 disabled:scale-100 group overflow-hidden min-w-32"
-        >
-          <span className={`relative z-10 flex items-center justify-center gap-2 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
-            <span>Send</span>
-            <span className="text-xl">📊</span>
-          </span>
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Spinner />
-            </div>
-          )}
-        </button>
+        {isLoading ? (
+          <button
+            onClick={onStop}
+            className="relative px-8 py-4 text-white text-base font-bold rounded-2xl transition-all duration-500 shadow-2xl hover:scale-110 active:scale-95 group overflow-hidden min-w-32 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span>Stop</span>
+              <span className="text-xl">⏹️</span>
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={submitNewMessage}
+            disabled={!newMessage.trim()}
+            className="finance-button relative px-8 py-4 text-white text-base font-bold rounded-2xl disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed transition-all duration-500 shadow-2xl hover:scale-110 active:scale-95 disabled:scale-100 group overflow-hidden min-w-32"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span>Send</span>
+              <span className="text-xl">📊</span>
+            </span>
+          </button>
+        )}
       </div>
       
       <div className="text-center mt-4 text-gray-500 text-xs animate-fadeIn">
@@ -282,6 +293,7 @@ function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sampleQueries, setSampleQueries] = useState([]);
+  const abortControllerRef = useRef(null);
 
   const isLoading = messages.length && messages[messages.length - 1].loading;
 
@@ -295,6 +307,25 @@ function Chatbot() {
     setNewMessage(query);
   }
 
+  function stopGeneration() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      
+      setMessages(prev => {
+        const updated = [...prev];
+        if (updated.length > 0 && updated[updated.length - 1].loading) {
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            loading: false,
+            content: updated[updated.length - 1].content + '\n\n*[Generation stopped by user]*'
+          };
+        }
+        return updated;
+      });
+    }
+  }
+
   async function submitNewMessage() {
     const trimmedMessage = newMessage.trim();
     if (!trimmedMessage || isLoading) return;
@@ -306,6 +337,10 @@ function Chatbot() {
     ]);
     setNewMessage('');
 
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     let chatIdOrNew = chatId;
     try {
       if (!chatId) {
@@ -314,7 +349,7 @@ function Chatbot() {
         chatIdOrNew = id;
       }
 
-      const stream = await sendChatMessage(chatIdOrNew, trimmedMessage);
+      const stream = await sendChatMessage(chatIdOrNew, trimmedMessage, signal);
       for await (const textChunk of parseSSEStream(stream)) {
         setMessages(prev => {
           const updated = [...prev];
@@ -334,8 +369,16 @@ function Chatbot() {
         };
         return updated;
       });
+      
+      abortControllerRef.current = null;
     } catch (err) {
       console.error(err);
+      
+      // Don't show error if it was aborted by user
+      if (err.name === 'AbortError') {
+        return;
+      }
+      
       let errorMessage = "An error occurred";
       
       if (err.data?.detail?.message) {
@@ -354,6 +397,8 @@ function Chatbot() {
         };
         return updated;
       });
+      
+      abortControllerRef.current = null;
     }
   }
 
@@ -447,6 +492,7 @@ function Chatbot() {
         isLoading={isLoading}
         setNewMessage={setNewMessage}
         submitNewMessage={submitNewMessage}
+        onStop={stopGeneration}
       />
     </div>
   );
