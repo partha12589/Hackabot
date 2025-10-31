@@ -181,6 +181,47 @@ function ChatMessages({ messages, isLoading }) {
           }`}>
             {loading && !content ? (
               <TypingIndicator />
+            ) : role === 'assistant' ? (
+              <div className="markdown-content animate-fadeIn">
+                <ReactMarkdown
+                  components={{
+                    // Headings
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-5" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-4" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="text-base font-bold text-green-300 mb-2 mt-3" {...props} />,
+                    
+                    // Paragraphs
+                    p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
+                    
+                    // Strong/bold
+                    strong: ({node, ...props}) => <strong className="font-bold text-green-200" {...props} />,
+                    
+                    // Lists
+                    ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
+                    li: ({node, ...props}) => <li className="text-gray-100 leading-7" {...props} />,
+                    ol: ({node, ...props}) => <ol className="mb-4 ml-6 space-y-2 list-decimal" {...props} />,
+                    
+                    // Code
+                    code: ({node, inline, ...props}) => 
+                      inline ? (
+                        <code className="bg-gray-700 text-green-300 px-2 py-1 rounded text-sm font-mono" {...props} />
+                      ) : (
+                        <code className="block bg-gray-800 text-gray-100 p-4 rounded-lg my-3 overflow-x-auto text-sm font-mono" {...props} />
+                      ),
+                    
+                    // Blockquotes
+                    blockquote: ({node, ...props}) => (
+                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3" {...props} />
+                    ),
+                    
+                    // Horizontal rules
+                    hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}

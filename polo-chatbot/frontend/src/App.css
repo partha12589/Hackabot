@@ -133,19 +133,27 @@ body {
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-/* Markdown content styling - Fix character spacing and word breaking */
+/* Markdown content styling - Beautiful portfolio formatting */
 .markdown-content {
   color: #e5e7eb;
   font-size: 1rem;
   line-height: 1.75;
   word-break: break-word;
   overflow-wrap: break-word;
-  hyphens: auto;
 }
 
 .markdown-content * {
   letter-spacing: normal;
   word-spacing: normal;
+}
+
+/* Better spacing between elements */
+.markdown-content > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-content > *:last-child {
+  margin-bottom: 0;
 }
 
 .markdown-content strong {
