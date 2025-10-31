@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -28,65 +30,30 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Function to clean and normalize text - AGGRESSIVE MODE
-function normalizeText(text) {
+// Clean up text spacing issues from streaming
+function cleanText(text) {
   if (!text) return text;
   
-  // Step 1: Fix character-by-character spacing issue (most aggressive fix)
-  // This handles cases like "R e t i r e m e n t" -> "Retirement"
-  let normalized = text;
-  
-  // Fix single characters with spaces between them (up to 10 iterations)
-  for (let i = 0; i < 10; i++) {
-    const before = normalized;
-    normalized = normalized
-      // Fix single letter/digit followed by space and another letter/digit
-      .replace(/\b([a-zA-Z0-9])\s+([a-zA-Z0-9])\b/g, '$1$2')
-      // Fix letter + space + letter (not word boundaries)
-      .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
-      .replace(/([a-z])\s+([A-Z])/g, '$1 $2') // Keep space before capitals (new words)
-      .replace(/([A-Z])\s+([A-Z])/g, '$1$2');
-    
-    if (before === normalized) break; // Stop if no changes
-  }
-  
-  // Step 2: Fix markdown symbols
-  normalized = normalized
-    // Fix asterisks with spaces
-    .replace(/\*\s+\*/g, '**')
-    .replace(/\s+\*\*/g, ' **')
-    .replace(/\*\*\s+/g, '** ')
-    // Fix colons with spaces
-    .replace(/\s+:/g, ':')
-    .replace(/:\s+\*/g, ':**')
-    // Fix parentheses
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
-    // Fix quotes
-    .replace(/\'\s+/g, "'")
-    .replace(/\s+\'/g, "'");
-  
-  // Step 3: Fix numbers
-  normalized = normalized
-    // Fix spaced numbers like "2 0 s" -> "20s"
+  // Fix common spacing patterns
+  return text
+    // Fix common words with spaces
+    .replace(/\b([A-Z][a-z]*)\s+([a-z]+)\b/g, (match, p1, p2) => {
+      // If second part looks like a word ending, join them
+      if (p2.length <= 3 || ['ing', 'tion', 'ate', 'ment', 'ity'].some(end => p2.endsWith(end))) {
+        return p1 + p2;
+      }
+      return match;
+    })
+    // Fix spaced abbreviations
+    .replace(/\bE\s+M\s+I\b/g, 'EMI')
+    .replace(/\bN\s+S\s+E\b/g, 'NSE')
+    .replace(/\bB\s+S\s+E\b/g, 'BSE')
+    // Fix numbers with spaces
+    .replace(/(\d)\s+,\s+(\d)/g, '$1,$2')
     .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix percentage signs
-    .replace(/(\d)\s+%/g, '$1%');
-  
-  // Step 4: Fix common abbreviations and punctuation
-  normalized = normalized
-    .replace(/\s+\./g, '.')
-    .replace(/\s+,/g, ',')
-    .replace(/e\s+\.\s+g\s+\./gi, 'e.g.')
-    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.');
-  
-  // Step 5: Clean up excessive whitespace
-  normalized = normalized
+    // Fix multiple spaces
     .replace(/\s{2,}/g, ' ')
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 newlines
     .trim();
-  
-  return normalized;
 }
 
 // API functions
@@ -184,6 +151,8 @@ function ChatMessages({ messages, isLoading }) {
             ) : role === 'assistant' ? (
               <div className="markdown-content animate-fadeIn">
                 <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     // Headings
                     h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
@@ -194,8 +163,8 @@ function ChatMessages({ messages, isLoading }) {
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
-                    // Strong/bold
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-200" {...props} />,
+                    // Strong/bold text
+                    strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -219,7 +188,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {content}
+                  {cleanText(content)}
                 </ReactMarkdown>
               </div>
             ) : (
@@ -629,20 +598,48 @@ function Chatbot() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
-      {/* Header */}
-      <div className="finance-header relative text-white p-8 shadow-2xl border-b-4 border-green-700 backdrop-blur-sm animate-fadeIn overflow-hidden">
+      {/* Header - Compact */}
+      <div className="finance-header relative text-white py-3 px-4 shadow-xl border-b-2 border-green-700 backdrop-blur-sm">
         <div className="absolute inset-0 animate-gradient opacity-20"></div>
         
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-black flex items-center gap-3 hover:scale-105 transition-transform duration-500">
-            <span className="text-5xl md:text-6xl animate-float drop-shadow-lg">💼</span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white break-words">
-              FinanceGPT
-            </span>
-          </h1>
-          <p className="text-green-200 mt-2 text-lg md:text-xl font-semibold">
-            AI Portfolio Advisor for Indian Investors ✨
-          </p>
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* CodeNCASH Logo - Compact */}
+              <img 
+                src="/logo.png" 
+                alt="CodeNCASH Logo" 
+                className="w-14 h-14 md:w-16 md:h-16 rounded-lg shadow-lg object-contain border border-green-400 bg-white p-0.5"
+              />
+              
+              <div>
+                <h1 className="text-xl md:text-2xl font-black flex items-center gap-2">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-green-200 to-white">
+                    CodeNCASH
+                  </span>
+                </h1>
+                <p className="text-green-200 text-xs md:text-sm font-medium">
+                  AI Portfolio Advisor
+                </p>
+              </div>
+            </div>
+            
+            {/* Back Button - Compact */}
+            {!showProfileForm && messages.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowProfileForm(true);
+                  setMessages([]);
+                  setUserProfile(null);
+                  setChatId(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-all duration-300 border border-gray-600 hover:border-green-500"
+              >
+                <span className="text-lg">←</span>
+                <span className="hidden md:inline">New</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -657,14 +654,14 @@ function Chatbot() {
       {/* Welcome Message */}
       {!showProfileForm && messages.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-8 bg-gray-950 overflow-y-auto">
-          <div className="text-center max-w-3xl">
+          <div className="text-center max-w-4xl">
             <div className="text-8xl mb-6 animate-float hover:scale-125 transition-transform duration-500 cursor-pointer">
               💰
             </div>
             <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400 mb-6 animate-slideInFromBottom">
-              Welcome to FinanceGPT
+              Welcome to CodeNCASH
             </h2>
-            <p className="text-gray-300 text-xl mb-8 leading-relaxed font-medium">
+            <p className="text-gray-300 text-xl mb-8 leading-relaxed font-medium px-4">
               I specialize in financial advice and can help you with investments, loans, taxes, budgeting, and more!
             </p>
 

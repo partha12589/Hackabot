@@ -189,10 +189,11 @@ async def send_message(chat_id: str, message: ChatMessage):
                 messages=messages,
                 stream=True,
                 options={
-                    "temperature": 0.7,
-                    "top_p": 0.9,
-                    "top_k": 40,
-                    "num_predict": 1000  # Allow longer responses for portfolio generation
+                    "temperature": 0.6,  # Lower temp for more consistent formatting
+                    "top_p": 0.95,
+                    "top_k": 50,
+                    "num_predict": 1000,
+                    "stop": ["\n\n\n"],  # Stop at triple newlines
                 }
             )
             
