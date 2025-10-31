@@ -180,16 +180,20 @@ async def send_message(chat_id: str, message: ChatMessage):
                 messages=messages,
                 stream=True,
                 options={
-                    "temperature": 0.7,  # Balanced creativity
+                    "temperature": 0.7,
                     "top_p": 0.9,
-                    "top_k": 40
+                    "top_k": 40,
+                    "repeat_penalty": 1.1,
+                    "num_predict": 500  # Limit response length for conciseness
                 }
             )
             
             for chunk in stream:
                 content = chunk['message']['content']
-                full_response += content
-                yield {"data": content}
+                # Skip empty chunks
+                if content and content.strip():
+                    full_response += content
+                    yield {"data": content}
             
             # Store assistant response in history
             chats[chat_id].append({

@@ -5,7 +5,7 @@ import './App.css';
 // Utility function to parse SSE stream
 async function* parseSSEStream(stream) {
   const reader = stream.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder('utf-8');
   let buffer = '';
 
   while (true) {
@@ -18,10 +18,75 @@ async function* parseSSEStream(stream) {
 
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        yield line.slice(6);
+        const chunk = line.slice(6);
+        // Skip empty chunks
+        if (chunk.trim()) {
+          yield chunk;
+        }
       }
     }
   }
+}
+
+// Function to clean and normalize text - AGGRESSIVE MODE
+function normalizeText(text) {
+  if (!text) return text;
+  
+  // Step 1: Fix character-by-character spacing issue (most aggressive fix)
+  // This handles cases like "R e t i r e m e n t" -> "Retirement"
+  let normalized = text;
+  
+  // Fix single characters with spaces between them (up to 10 iterations)
+  for (let i = 0; i < 10; i++) {
+    const before = normalized;
+    normalized = normalized
+      // Fix single letter/digit followed by space and another letter/digit
+      .replace(/\b([a-zA-Z0-9])\s+([a-zA-Z0-9])\b/g, '$1$2')
+      // Fix letter + space + letter (not word boundaries)
+      .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
+      .replace(/([a-z])\s+([A-Z])/g, '$1 $2') // Keep space before capitals (new words)
+      .replace(/([A-Z])\s+([A-Z])/g, '$1$2');
+    
+    if (before === normalized) break; // Stop if no changes
+  }
+  
+  // Step 2: Fix markdown symbols
+  normalized = normalized
+    // Fix asterisks with spaces
+    .replace(/\*\s+\*/g, '**')
+    .replace(/\s+\*\*/g, ' **')
+    .replace(/\*\*\s+/g, '** ')
+    // Fix colons with spaces
+    .replace(/\s+:/g, ':')
+    .replace(/:\s+\*/g, ':**')
+    // Fix parentheses
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    // Fix quotes
+    .replace(/\'\s+/g, "'")
+    .replace(/\s+\'/g, "'");
+  
+  // Step 3: Fix numbers
+  normalized = normalized
+    // Fix spaced numbers like "2 0 s" -> "20s"
+    .replace(/(\d)\s+(\d)/g, '$1$2')
+    // Fix percentage signs
+    .replace(/(\d)\s+%/g, '$1%');
+  
+  // Step 4: Fix common abbreviations and punctuation
+  normalized = normalized
+    .replace(/\s+\./g, '.')
+    .replace(/\s+,/g, ',')
+    .replace(/e\s+\.\s+g\s+\./gi, 'e.g.')
+    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.');
+  
+  // Step 5: Clean up excessive whitespace
+  normalized = normalized
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 newlines
+    .trim();
+  
+  return normalized;
 }
 
 // API functions
@@ -152,7 +217,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-4 border-gray-700" {...props} />,
                   }}
                 >
-                  {content}
+                  {normalizeText(content)}
                 </ReactMarkdown>
               </div>
             ) : (
