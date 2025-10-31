@@ -28,64 +28,36 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Function to clean and normalize text - AGGRESSIVE MODE
+// Function to gently tidy assistant responses without breaking markdown semantics
 function normalizeText(text) {
   if (!text) return text;
-  
-  // Step 1: Fix character-by-character spacing issue (most aggressive fix)
-  // This handles cases like "R e t i r e m e n t" -> "Retirement"
-  let normalized = text;
-  
-  // Fix single characters with spaces between them (up to 10 iterations)
-  for (let i = 0; i < 10; i++) {
-    const before = normalized;
-    normalized = normalized
-      // Fix single letter/digit followed by space and another letter/digit
-      .replace(/\b([a-zA-Z0-9])\s+([a-zA-Z0-9])\b/g, '$1$2')
-      // Fix letter + space + letter (not word boundaries)
-      .replace(/([a-zA-Z])\s+([a-z])/g, '$1$2')
-      .replace(/([a-z])\s+([A-Z])/g, '$1 $2') // Keep space before capitals (new words)
-      .replace(/([A-Z])\s+([A-Z])/g, '$1$2');
-    
-    if (before === normalized) break; // Stop if no changes
-  }
-  
-  // Step 2: Fix markdown symbols
+
+  let normalized = text.replace(/\r\n/g, '\n');
+
+  // Collapse sequences where every character is separated by a space ("R e t i r e")
+  normalized = normalized.replace(/\b(?:[A-Za-z]\s){2,}[A-Za-z]\b/g, (match) =>
+    match.replace(/\s+/g, '')
+  );
+
+  // Collapse spaced numbers like "2 0 2 4"
+  normalized = normalized.replace(/\b(?:\d\s){1,}\d\b/g, (match) =>
+    match.replace(/\s+/g, '')
+  );
+
+  // Fix stray markdown emphasis markers such as "** bold **"
   normalized = normalized
-    // Fix asterisks with spaces
-    .replace(/\*\s+\*/g, '**')
-    .replace(/\s+\*\*/g, ' **')
-    .replace(/\*\*\s+/g, '** ')
-    // Fix colons with spaces
-    .replace(/\s+:/g, ':')
-    .replace(/:\s+\*/g, ':**')
-    // Fix parentheses
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
-    // Fix quotes
-    .replace(/\'\s+/g, "'")
-    .replace(/\s+\'/g, "'");
-  
-  // Step 3: Fix numbers
-  normalized = normalized
-    // Fix spaced numbers like "2 0 s" -> "20s"
-    .replace(/(\d)\s+(\d)/g, '$1$2')
-    // Fix percentage signs
-    .replace(/(\d)\s+%/g, '$1%');
-  
-  // Step 4: Fix common abbreviations and punctuation
-  normalized = normalized
-    .replace(/\s+\./g, '.')
-    .replace(/\s+,/g, ',')
-    .replace(/e\s+\.\s+g\s+\./gi, 'e.g.')
-    .replace(/i\s+\.\s+e\s+\./gi, 'i.e.');
-  
-  // Step 5: Clean up excessive whitespace
-  normalized = normalized
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 newlines
-    .trim();
-  
+    .replace(/\*\*\s+([^*\s])/g, '**$1')
+    .replace(/([^*\s])\s+\*\*/g, '$1**');
+
+  // Remove accidental double spaces created while streaming (but keep indentation)
+  normalized = normalized.replace(/(\S)\s{2,}(\S)/g, '$1 $2');
+
+  // Ensure punctuation is followed by a space when the next sentence starts immediately
+  normalized = normalized.replace(/([.!?])([A-Z])/g, '$1 $2');
+
+  // Keep numbers close to percentages ("40 %" -> "40%")
+  normalized = normalized.replace(/(\d)\s+%/g, '$1%');
+
   return normalized;
 }
 
@@ -186,16 +158,41 @@ function ChatMessages({ messages, isLoading }) {
                 <ReactMarkdown
                   components={{
                     // Headings
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-5" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-4" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="text-base font-bold text-green-300 mb-2 mt-3" {...props} />,
+                    h1: ({ node, ...props }) => (
+                      <h1
+                        className="text-xl md:text-2xl font-semibold text-slate-100 mb-3 mt-5 leading-snug tracking-tight border-l-4 border-green-500/40 pl-4"
+                        {...props}
+                      />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2
+                        className="text-lg md:text-xl font-semibold text-slate-100 mb-3 mt-4 leading-snug tracking-tight border-l-4 border-green-500/30 pl-4"
+                        {...props}
+                      />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3
+                        className="text-base md:text-lg font-semibold text-slate-100 mb-2 mt-3 leading-snug tracking-tight border-l-4 border-green-500/25 pl-3"
+                        {...props}
+                      />
+                    ),
+                    h4: ({ node, ...props }) => (
+                      <h4
+                        className="text-base font-semibold text-slate-100 mb-2 mt-3 leading-snug border-l-4 border-green-500/20 pl-3"
+                        {...props}
+                      />
+                    ),
                     
                     // Paragraphs
                     p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
                     
                     // Strong/bold
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-200" {...props} />,
+                    strong: ({ node, ...props }) => (
+                      <strong
+                        className="font-semibold text-slate-100 bg-green-500/15 px-1.5 py-0.5 rounded-md"
+                        {...props}
+                      />
+                    ),
                     
                     // Lists
                     ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
@@ -219,7 +216,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {content}
+                  {content || ''}
                 </ReactMarkdown>
               </div>
             ) : (
@@ -538,10 +535,12 @@ function Chatbot() {
       setMessages(prev => {
         const updated = [...prev];
         if (updated.length > 0 && updated[updated.length - 1].loading) {
+          const lastIndex = updated.length - 1;
+          const messageWithStopNote = `${updated[lastIndex].content || ''}\n\n*[Generation stopped by user]*`;
           updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
+            ...updated[lastIndex],
             loading: false,
-            content: updated[updated.length - 1].content + '\n\n*[Generation stopped by user]*'
+            content: normalizeText(messageWithStopNote)
           };
         }
         return updated;
@@ -578,9 +577,11 @@ function Chatbot() {
       for await (const textChunk of parseSSEStream(stream)) {
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: updated[updated.length - 1].content + textChunk
+          const lastIndex = updated.length - 1;
+          const previousContent = updated[lastIndex].content || '';
+          updated[lastIndex] = {
+            ...updated[lastIndex],
+            content: normalizeText(previousContent + textChunk)
           };
           return updated;
         });
