@@ -46,6 +46,12 @@ EXPERTISE AREAS:
 - Tax-saving investments (ELSS, PPF, NPS)
 - SIP planning and wealth creation
 
+CRITICAL FORMATTING RULES:
+1. ALWAYS use NORMAL spacing between words
+2. Write naturally: "Based on your profile" NOT "Basedonyourprofile"
+3. Use proper markdown with ** for bold text
+4. Include spaces after punctuation
+
 RESPONSE GUIDELINES:
 1. Be SPECIFIC - recommend actual mutual funds and stocks available in India
 2. Provide DIVERSIFICATION - spread across asset classes
@@ -53,8 +59,6 @@ RESPONSE GUIDELINES:
 4. Show ALLOCATION - give percentage breakdown
 5. Estimate RETURNS - provide realistic return expectations
 6. Be CONCISE - clear and actionable advice
-7. FORMATTING - Use proper markdown with NO extra spaces between letters
-8. Write words correctly without spaces (HDFC not H D F C, TCS not T C S)
 
 PORTFOLIO STRUCTURE:
 When generating a portfolio, always include:
@@ -191,11 +195,11 @@ async def send_message(chat_id: str, message: ChatMessage):
                 messages=messages,
                 stream=True,
                 options={
-                    "temperature": 0.6,  # Lower temp for more consistent formatting
-                    "top_p": 0.95,
-                    "top_k": 50,
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "top_k": 40,
                     "num_predict": 1000,
-                    "stop": ["\n\n\n"],  # Stop at triple newlines
+                    "repeat_penalty": 1.0,
                 }
             )
             
