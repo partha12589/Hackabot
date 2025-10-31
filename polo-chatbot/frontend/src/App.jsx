@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 // Utility function to parse SSE stream
@@ -109,6 +110,47 @@ function ChatMessages({ messages, isLoading }) {
           }`}>
             {loading && !content ? (
               <TypingIndicator />
+            ) : role === 'assistant' ? (
+              <div className="prose prose-invert prose-sm max-w-none animate-fadeIn">
+                <ReactMarkdown
+                  components={{
+                    // Headings with custom styling
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-3 mt-4" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-4" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-3" {...props} />,
+                    
+                    // Paragraphs with spacing
+                    p: ({node, ...props}) => <p className="mb-3 leading-relaxed text-gray-100" {...props} />,
+                    
+                    // Strong/bold text
+                    strong: ({node, ...props}) => <strong className="font-bold text-green-300" {...props} />,
+                    
+                    // Unordered lists with custom bullets
+                    ul: ({node, ...props}) => <ul className="mb-3 ml-2 space-y-2" {...props} />,
+                    li: ({node, ...props}) => (
+                      <li className="ml-4 pl-2 text-gray-100 leading-relaxed" {...props} />
+                    ),
+                    
+                    // Ordered lists
+                    ol: ({node, ...props}) => <ol className="mb-3 ml-2 space-y-2 list-decimal list-inside" {...props} />,
+                    
+                    // Code blocks
+                    code: ({node, inline, ...props}) => 
+                      inline ? (
+                        <code className="bg-gray-700 px-2 py-1 rounded text-green-300 text-sm" {...props} />
+                      ) : (
+                        <code className="block bg-gray-800 p-3 rounded-lg my-2 overflow-x-auto text-sm" {...props} />
+                      ),
+                    
+                    // Blockquotes
+                    blockquote: ({node, ...props}) => (
+                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3" {...props} />
+                    ),
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
             )}
