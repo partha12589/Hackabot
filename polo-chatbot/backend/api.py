@@ -13,6 +13,7 @@ from investment_data import (
     MUTUAL_FUNDS, STOCKS, DEBT_INSTRUMENTS, 
     RISK_ALLOCATIONS, get_investment_recommendations
 )
+from market_data import MarketDataService
 
 app = FastAPI(title="FinanceGPT API", version="1.0.0")
 
@@ -266,6 +267,51 @@ async def get_sample_queries():
     return {
         "queries": FinanceQueryValidator.get_sample_queries()
     }
+
+
+# ============= LIVE MARKET DATA API ENDPOINTS =============
+
+@app.get("/market/stock/{symbol}")
+async def get_stock_price(symbol: str):
+    """
+    Get real-time stock price from NSE
+    Example: /market/stock/TCS
+    """
+    data = MarketDataService.get_stock_price(symbol)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+    return data
+
+
+@app.get("/market/mutual-fund/{scheme_code}")
+async def get_mutual_fund_nav(scheme_code: str):
+    """
+    Get mutual fund NAV from MFapi
+    Example: /market/mutual-fund/119551
+    """
+    data = MarketDataService.get_mutual_fund_nav(scheme_code)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Fund {scheme_code} not found")
+    return data
+
+
+@app.get("/market/indices")
+async def get_market_indices():
+    """
+    Get Nifty 50 and Sensex current values
+    """
+    return MarketDataService.get_market_indices()
+
+
+@app.post("/market/portfolio-data")
+async def get_portfolio_live_data(symbols: Dict[str, List[str]]):
+    """
+    Get all live data for a portfolio at once
+    Request body: {"stocks": ["TCS", "INFY"], "mutual_funds": ["119551"]}
+    """
+    stocks = symbols.get("stocks", [])
+    mutual_funds = symbols.get("mutual_funds", [])
+    return MarketDataService.get_portfolio_live_data(stocks, mutual_funds)
 
 
 if __name__ == "__main__":

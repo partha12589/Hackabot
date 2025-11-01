@@ -5,6 +5,7 @@ MUTUAL_FUNDS = {
     "large_cap": [
         {
             "name": "HDFC Top 100 Fund",
+            "scheme_code": "119551",
             "category": "Large Cap",
             "risk": "medium",
             "expected_return": "12-14%",
@@ -14,6 +15,7 @@ MUTUAL_FUNDS = {
         },
         {
             "name": "Axis Bluechip Fund",
+            "scheme_code": "120503",
             "category": "Large Cap",
             "risk": "medium",
             "expected_return": "11-13%",
@@ -23,6 +25,7 @@ MUTUAL_FUNDS = {
         },
         {
             "name": "ICICI Prudential Bluechip Fund",
+            "scheme_code": "120505",
             "category": "Large Cap",
             "risk": "medium",
             "expected_return": "11-13%",
@@ -32,6 +35,7 @@ MUTUAL_FUNDS = {
         },
         {
             "name": "Mirae Asset Large Cap Fund",
+            "scheme_code": "119598",
             "category": "Large Cap",
             "risk": "medium",
             "expected_return": "12-14%",
@@ -164,6 +168,7 @@ STOCKS = {
     "blue_chip": [
         {
             "name": "Reliance Industries",
+            "symbol": "RELIANCE",
             "sector": "Energy/Telecom",
             "exchange": "NSE/BSE",
             "risk": "medium",
@@ -172,6 +177,7 @@ STOCKS = {
         },
         {
             "name": "TCS",
+            "symbol": "TCS",
             "sector": "IT Services",
             "exchange": "NSE/BSE",
             "risk": "low",
@@ -180,6 +186,7 @@ STOCKS = {
         },
         {
             "name": "HDFC Bank",
+            "symbol": "HDFCBANK",
             "sector": "Banking",
             "exchange": "NSE/BSE",
             "risk": "low",
@@ -188,6 +195,7 @@ STOCKS = {
         },
         {
             "name": "Infosys",
+            "symbol": "INFY",
             "sector": "IT Services",
             "exchange": "NSE/BSE",
             "risk": "low",
@@ -196,6 +204,7 @@ STOCKS = {
         },
         {
             "name": "ITC",
+            "symbol": "ITC",
             "sector": "FMCG",
             "exchange": "NSE/BSE",
             "risk": "low",
