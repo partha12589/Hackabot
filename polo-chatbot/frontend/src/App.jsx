@@ -124,7 +124,7 @@ function ChatMessages({ messages, isLoading }) {
               <TypingIndicator />
             ) : role === 'assistant' ? (
               <div 
-                className="markdown-content leading-relaxed animate-fadeIn text-base"
+                className="markdown-content leading-relaxed animate-fadeIn"
                 dangerouslySetInnerHTML={{ __html: marked.parse(content || '') }}
               />
             ) : (
