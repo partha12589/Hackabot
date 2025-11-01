@@ -46,12 +46,6 @@ EXPERTISE AREAS:
 - Tax-saving investments (ELSS, PPF, NPS)
 - SIP planning and wealth creation
 
-CRITICAL FORMATTING RULES:
-1. ALWAYS use NORMAL spacing between words
-2. Write naturally: "Based on your profile" NOT "Basedonyourprofile"
-3. Use proper markdown with ** for bold text
-4. Include spaces after punctuation
-
 RESPONSE GUIDELINES:
 1. Be SPECIFIC - recommend actual mutual funds and stocks available in India
 2. Provide DIVERSIFICATION - spread across asset classes
@@ -205,8 +199,7 @@ async def send_message(chat_id: str, message: ChatMessage):
             
             for chunk in stream:
                 content = chunk['message']['content']
-                # Skip empty chunks
-                if content and content.strip():
+                if content:
                     full_response += content
                     yield {"data": content}
             
