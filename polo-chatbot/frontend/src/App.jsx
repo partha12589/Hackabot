@@ -31,56 +31,6 @@ async function* parseSSEStream(stream) {
   }
 }
 
-// Smart text formatter - handles all spacing issues intelligently
-function formatResponse(text) {
-  if (!text) return text;
-  
-  // Step 1: Add spaces where clearly missing (no space between letter and capital)
-  let formatted = text
-    // Add space before capital letter in middle of "word" (Basedonyour -> Based on your)
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    // Add space after common sentence enders
-    .replace(/([.!?])([A-Z])/g, '$1 $2')
-    // Add space after commas if missing
-    .replace(/,([^\s])/g, ', $1')
-    // Add space after colons
-    .replace(/:([^\s:])/g, ': $1');
-  
-  // Step 2: Fix specific abbreviations with spaces
-  formatted = formatted
-    .replace(/\bS\s+E\s+B\s+I\b/g, 'SEBI')
-    .replace(/\bE\s+M\s+I\b/g, 'EMI')
-    .replace(/\bN\s+S\s+E\b/g, 'NSE')
-    .replace(/\bB\s+S\s+E\b/g, 'BSE')
-    .replace(/\bS\s+I\s+P\b/g, 'SIP')
-    .replace(/\bH\s+D\s+F\s+C\b/g, 'HDFC')
-    .replace(/\bI\s+C\s+I\s+C\s+I\b/g, 'ICICI')
-    .replace(/\bT\s+C\s+S\b/g, 'TCS')
-    .replace(/\bS\s+B\s+I\b/g, 'SBI');
-  
-  // Step 3: Fix numbers with spaces
-  formatted = formatted
-    .replace(/(\d)\s+(\d)/g, '$1$2')
-    .replace(/(\d)\s+,\s*(\d)/g, '$1,$2')
-    .replace(/(\d+)\s+%/g, '$1%')
-    .replace(/₹\s*(\d)/g, '₹$1');
-  
-  // Step 4: Fix markdown formatting
-  formatted = formatted
-    // Ensure space before ** at start of bold
-    .replace(/(\w)\*\*/g, '$1 **')
-    // Ensure space after ** at end of bold  
-    .replace(/\*\*(\w)/g, '** $1')
-    // Fix double asterisks with spaces between
-    .replace(/\*\s+\*/g, '**');
-  
-  // Step 5: Clean up excessive spaces
-  formatted = formatted
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  
-  return formatted;
-}
 
 // API functions
 const API_URL = 'http://localhost:8000';
@@ -217,47 +167,11 @@ function ChatMessages({ messages, isLoading }) {
               <>
                 <div className="markdown-content animate-fadeIn">
                   <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    // Headings
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-green-300 mb-4 mt-6" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-green-300 mb-3 mt-5" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-green-300 mb-2 mt-4" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="text-base font-bold text-green-300 mb-2 mt-3" {...props} />,
-                    
-                    // Paragraphs
-                    p: ({node, ...props}) => <p className="mb-3 leading-7 text-gray-100" {...props} />,
-                    
-                    // Strong/bold text - VERY PROMINENT
-                    strong: ({node, ...props}) => (
-                      <strong className="font-bold text-green-300 bg-green-900 bg-opacity-30 px-1 rounded" {...props} />
-                    ),
-                    
-                    // Lists
-                    ul: ({node, ...props}) => <ul className="mb-4 ml-6 space-y-2 list-disc" {...props} />,
-                    li: ({node, ...props}) => <li className="text-gray-100 leading-7" {...props} />,
-                    ol: ({node, ...props}) => <ol className="mb-4 ml-6 space-y-2 list-decimal" {...props} />,
-                    
-                    // Code
-                    code: ({node, inline, ...props}) => 
-                      inline ? (
-                        <code className="bg-gray-700 text-green-300 px-2 py-1 rounded text-sm font-mono" {...props} />
-                      ) : (
-                        <code className="block bg-gray-800 text-gray-100 p-4 rounded-lg my-3 overflow-x-auto text-sm font-mono" {...props} />
-                      ),
-                    
-                    // Blockquotes
-                    blockquote: ({node, ...props}) => (
-                      <blockquote className="border-l-4 border-green-500 pl-4 italic text-gray-300 my-3" {...props} />
-                    ),
-                    
-                    // Horizontal rules
-                    hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {content}
+                  </ReactMarkdown>
               </div>
               
               {/* PDF Download Button */}

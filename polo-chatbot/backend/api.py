@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import ollama
 import uuid
+import re
 from sse_starlette.sse import EventSourceResponse
 from typing import List, Dict, Optional
 from finance_utils import FinanceQueryValidator
@@ -207,8 +208,22 @@ async def send_message(chat_id: str, message: ChatMessage):
                 content = chunk['message']['content']
                 # Skip empty chunks
                 if content and content.strip():
-                    full_response += content
-                    yield {"data": content}
+                    # Clean up spacing issues from AI model
+                    cleaned_content = content
+                    # Fix numbers with spaces (5 0 0 -> 500)
+                    cleaned_content = cleaned_content.replace(' , ', ',')  # Fix comma spacing
+                    # Fix numbers like "5 0 0 , 0 0 0" -> "500,000"
+                    cleaned_content = re.sub(r'(\d)\s+(\d)', r'\1\2', cleaned_content)
+                    # Fix spaced abbreviations (H D F C -> HDFC)
+                    cleaned_content = re.sub(r'\b([A-Z])\s+([A-Z])\s+([A-Z])\s+([A-Z])\b', r'\1\2\3\4', cleaned_content)
+                    cleaned_content = re.sub(r'\b([A-Z])\s+([A-Z])\s+([A-Z])\b', r'\1\2\3', cleaned_content)
+                    # Fix percentage spacing (1 5 % -> 15%)
+                    cleaned_content = re.sub(r'(\d+)\s+%', r'\1%', cleaned_content)
+                    # Fix currency spacing (? 5 -> ?5)
+                    cleaned_content = cleaned_content.replace('? ', '?')
+                    
+                    full_response += cleaned_content
+                    yield {"data": cleaned_content}
             
             # Store assistant response in history
             chats[chat_id].append({
