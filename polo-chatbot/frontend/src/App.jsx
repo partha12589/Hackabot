@@ -22,7 +22,6 @@ async function* parseSSEStream(stream) {
     for (const line of lines) {
       if (line.startsWith('data: ')) {
         const chunk = line.slice(6);
-        // Skip empty chunks
         if (chunk.trim()) {
           yield chunk;
         }
@@ -30,7 +29,6 @@ async function* parseSSEStream(stream) {
     }
   }
 }
-
 
 // API functions
 const API_URL = 'http://localhost:8000';
@@ -172,7 +170,7 @@ function ChatMessages({ messages, isLoading }) {
                   >
                     {content}
                   </ReactMarkdown>
-              </div>
+                </div>
               
               {/* PDF Download Button */}
               {content && content.length > 200 && (

@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import ollama
 import uuid
-import re
 from sse_starlette.sse import EventSourceResponse
 from typing import List, Dict, Optional
 from finance_utils import FinanceQueryValidator
@@ -46,12 +45,6 @@ EXPERTISE AREAS:
 - Debt Instruments (FDs, PPF, NSC, Bonds)
 - Tax-saving investments (ELSS, PPF, NPS)
 - SIP planning and wealth creation
-
-CRITICAL FORMATTING RULES:
-1. ALWAYS use NORMAL spacing between words
-2. Write naturally: "Based on your profile" NOT "Basedonyourprofile"
-3. Use proper markdown with ** for bold text
-4. Include spaces after punctuation
 
 RESPONSE GUIDELINES:
 1. Be SPECIFIC - recommend actual mutual funds and stocks available in India
@@ -206,24 +199,9 @@ async def send_message(chat_id: str, message: ChatMessage):
             
             for chunk in stream:
                 content = chunk['message']['content']
-                # Skip empty chunks
-                if content and content.strip():
-                    # Clean up spacing issues from AI model
-                    cleaned_content = content
-                    # Fix numbers with spaces (5 0 0 -> 500)
-                    cleaned_content = cleaned_content.replace(' , ', ',')  # Fix comma spacing
-                    # Fix numbers like "5 0 0 , 0 0 0" -> "500,000"
-                    cleaned_content = re.sub(r'(\d)\s+(\d)', r'\1\2', cleaned_content)
-                    # Fix spaced abbreviations (H D F C -> HDFC)
-                    cleaned_content = re.sub(r'\b([A-Z])\s+([A-Z])\s+([A-Z])\s+([A-Z])\b', r'\1\2\3\4', cleaned_content)
-                    cleaned_content = re.sub(r'\b([A-Z])\s+([A-Z])\s+([A-Z])\b', r'\1\2\3', cleaned_content)
-                    # Fix percentage spacing (1 5 % -> 15%)
-                    cleaned_content = re.sub(r'(\d+)\s+%', r'\1%', cleaned_content)
-                    # Fix currency spacing (? 5 -> ?5)
-                    cleaned_content = cleaned_content.replace('? ', '?')
-                    
-                    full_response += cleaned_content
-                    yield {"data": cleaned_content}
+                if content:
+                    full_response += content
+                    yield {"data": content}
             
             # Store assistant response in history
             chats[chat_id].append({
