@@ -125,7 +125,7 @@ function ChatMessages({ messages, isLoading }) {
             ) : role === 'assistant' ? (
               <div 
                 className="markdown-content leading-relaxed animate-fadeIn text-base"
-                dangerouslySetInnerHTML={{ __html: marked.parse(content) }}
+                dangerouslySetInnerHTML={{ __html: marked.parse(content || '') }}
               />
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed animate-fadeIn text-base">{content}</div>
