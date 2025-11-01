@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import ollama
 import uuid
+import re
 from sse_starlette.sse import EventSourceResponse
 from typing import List, Dict, Optional
 from finance_utils import FinanceQueryValidator
@@ -13,6 +14,71 @@ from investment_data import (
     MUTUAL_FUNDS, STOCKS, DEBT_INSTRUMENTS, 
     RISK_ALLOCATIONS, get_investment_recommendations
 )
+
+
+def clean_text(text: str) -> str:
+    """
+    Clean text from AI model output to fix spacing issues
+    """
+    if not text:
+        return text
+    
+    # Fix spaced numbers: "1 2 3" -> "123", "5 0 0 , 0 0 0" -> "500,000"
+    text = re.sub(r'(\d)\s+(\d)', r'\1\2', text)
+    
+    # Fix spaced punctuation: " , " -> ",", " . " -> "."
+    text = re.sub(r'\s+,\s+', ',', text)
+    text = re.sub(r'(\d)\s+\.', r'\1.', text)
+    
+    # Fix common abbreviations with spaces
+    abbreviations = {
+        r'\bE\s*L\s*S\s*S\b': 'ELSS',
+        r'\bP\s*P\s*F\b': 'PPF',
+        r'\bN\s*S\s*C\b': 'NSC',
+        r'\bS\s*S\s*Y\b': 'SSY',
+        r'\bK\s*V\s*P\b': 'KVP',
+        r'\bS\s*C\s*S\s*S\b': 'SCSS',
+        r'\bH\s*D\s*F\s*C\b': 'HDFC',
+        r'\bI\s*C\s*I\s*C\s*I\b': 'ICICI',
+        r'\bT\s*C\s*S\b': 'TCS',
+        r'\bS\s*B\s*I\b': 'SBI',
+        r'\bN\s*S\s*E\b': 'NSE',
+        r'\bB\s*S\s*E\b': 'BSE',
+        r'\bE\s*M\s*I\b': 'EMI',
+        r'\bS\s*I\s*P\b': 'SIP',
+        r'\bS\s*E\s*B\s*I\b': 'SEBI',
+        r'\bN\s*P\s*S\b': 'NPS',
+        r'\bI\s*T\s*R\b': 'ITR',
+        r'\bG\s*S\s*T\b': 'GST',
+        r'\bT\s*D\s*S\b': 'TDS',
+        r'\bP\s*F\b': 'PF',
+        r'\bE\s*P\s*F\b': 'EPF',
+        r'\bE\s*T\s*F\b': 'ETF',
+        r'\bR\s*O\s*I\b': 'ROI',
+    }
+    
+    for pattern, replacement in abbreviations.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    
+    # Fix currency spacing: "? 5" -> "?5", "Rs . " -> "Rs."
+    text = re.sub(r'?\s+', '?', text)
+    text = re.sub(r'Rs\s*\.\s*', 'Rs.', text)
+    
+    # Fix percentage spacing: "1 5 %" -> "15%"
+    text = re.sub(r'(\d+)\s*%', r'\1%', text)
+    
+    # Fix section references: "Section 8 0 C" -> "Section 80C"
+    text = re.sub(r'Section\s+(\d)\s+(\d)\s+([A-Z])', r'Section \1\2\3', text)
+    
+    # Fix year ranges: "2 0 2 3 - 2 4" -> "2023-24"
+    text = re.sub(r'(\d)\s+(\d)\s+(\d)\s+(\d)\s*-\s*(\d)\s+(\d)', r'\1\2\3\4-\5\6', text)
+    
+    # Fix common words that get spaced
+    text = re.sub(r'\bH\s*istor\s*ically\b', 'Historically', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bModer\s*ately\b', 'Moderately', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bBenef\s*icial\b', 'Beneficial', text, flags=re.IGNORECASE)
+    
+    return text
 
 app = FastAPI(title="FinanceGPT API", version="1.0.0")
 
@@ -46,11 +112,14 @@ EXPERTISE AREAS:
 - Tax-saving investments (ELSS, PPF, NPS)
 - SIP planning and wealth creation
 
-CRITICAL FORMATTING RULES:
-1. ALWAYS use NORMAL spacing between words
-2. Write naturally: "Based on your profile" NOT "Basedonyourprofile"
-3. Use proper markdown with ** for bold text
-4. Include spaces after punctuation
+CRITICAL FORMATTING RULES - FOLLOW STRICTLY:
+1. Write numbers without spaces: "1.5" NOT "1 . 5", "500,000" NOT "5 0 0 , 0 0 0"
+2. Write abbreviations without spaces: "ELSS" NOT "E L S S", "HDFC" NOT "H D F C"
+3. Write percentages without spaces: "15%" NOT "1 5 %"
+4. Write currency properly: "?1.5 lakh" NOT "? 1 . 5 lakh"
+5. Write years properly: "2023-24" NOT "2 0 2 3 - 2 4"
+6. Use proper markdown: **bold** for emphasis
+7. Use proper spacing between words
 
 RESPONSE GUIDELINES:
 1. Be SPECIFIC - recommend actual mutual funds and stocks available in India
@@ -205,10 +274,11 @@ async def send_message(chat_id: str, message: ChatMessage):
             
             for chunk in stream:
                 content = chunk['message']['content']
-                # Skip empty chunks
-                if content and content.strip():
-                    full_response += content
-                    yield {"data": content}
+                if content:
+                    # Clean text to fix spacing issues from AI model
+                    cleaned_content = clean_text(content)
+                    full_response += cleaned_content
+                    yield {"data": cleaned_content}
             
             # Store assistant response in history
             chats[chat_id].append({
