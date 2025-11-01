@@ -256,7 +256,7 @@ function ChatMessages({ messages, isLoading }) {
                     hr: ({node, ...props}) => <hr className="my-6 border-gray-700" {...props} />,
                   }}
                 >
-                  {formatResponse(content)}
+                  {content}
                 </ReactMarkdown>
               </div>
               
